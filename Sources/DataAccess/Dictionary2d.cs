@@ -7,7 +7,7 @@ namespace DataAccess
 {
     // 2d Dictionairy
     // Sparse implementation. 
-    // Implementation is not intended for large sizes. Rather, we expec this to be used
+    // Implementation is not intended for large sizes. Rather, we expect this to be used
     // for summarizing information.
     public class Dictionary2d<TKey1, TKey2, TValue>
     {

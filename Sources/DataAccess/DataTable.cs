@@ -18,9 +18,10 @@ namespace DataAccess
     // Tabular data (like from a CSV file)
     // While each row is independent, 
     // All operations are on entire columns, including add, remove, reorder.
+    // Table is very mutable.
     public class DataTable {
 
-        public Column[] Columns;
+        public Column[] Columns { get; set; }
 
         // Helper to print a single row. 
         // Useful to see example of each type of data. 
@@ -376,6 +377,12 @@ namespace DataAccess
                 }
             }
         }
+
+        public Row GetRow(int rowIndex)
+        {
+            return new Row(this, rowIndex);
+        }
+
         // Only keep rows where the predicate returns true
         public void KeepRows(Func<Row, bool> predicate) {
             // Want to avoid multiple memory allocations
