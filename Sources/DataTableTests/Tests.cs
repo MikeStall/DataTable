@@ -67,8 +67,39 @@ Sarah, 40, cherries");
             row.WriteCsv(sw);
 
             // Test writing a single row back to a stream.
+            // Spacing is arbitrary. The write won't emit extra spaces.
             Assert.Equal("Ed,65,prunes\r\n", sw.ToString());
         }
 
+
+        class Point
+        {
+            public int x { get; set; }
+            public int y { get; set; }
+        }
+
+        [Fact]
+        public void ArrayToTable()
+        {
+            Point[] ps = new Point[] { 
+                new Point { x= 11, y=12},
+                new Point { x= 21, y=22},
+                new Point { x=31, y=32}
+            };
+
+            // Tests converting an array of structs into a table
+            DataTable dt = Utility.ToTable(ps);
+
+
+            StringWriter sw = new StringWriter();
+            dt.SaveToStream(sw);
+            Assert.Equal(
+@"x,y
+11,12
+21,22
+31,32
+", sw.ToString());
+
+        }
     }
 }
