@@ -70,13 +70,34 @@ namespace DataAccess
         public static DataTable ReadCSV(string filename) {
             return Read(filename, ',');
         }
+
+         
+        public static DataTable ReadCSV(TextReader stream)
+        {
+            List<string> lines = new List<string>();
+            while (true)
+            {
+                string line = stream.ReadLine();
+                if (line == null)
+                {
+                    return ReadArray(lines, ',', false);
+                }
+                lines.Add(line);
+            }            
+        }
+
         // Read in a Ascii file that uses the given separate characters.
         // Like CSV. 
         // Supports quotes to escape commas
         public static DataTable Read(string filename, char separator, bool fAllowMismatch = false) {
             var lines = File.ReadAllLines(filename);
 
-            int numRows = lines.Length - 1;
+            return ReadArray(lines, separator, fAllowMismatch);
+        }
+
+        private static DataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)
+        {
+            int numRows = lines.Count - 1;
             // First row is a header
 
             string[] names = split(lines[0], separator);
@@ -90,7 +111,7 @@ namespace DataAccess
             }
 
             // Parse each row into data set
-            for (int i = 1; i < lines.Length; i++) {
+            for (int i = 1; i < lines.Count; i++) {
                 string line = lines[i];
                 int row = i - 1;
                 string[] parts = split(line, separator);
@@ -111,7 +132,7 @@ namespace DataAccess
                 if (!fAllowMismatch) {
                     // If mismatch allowed, then treat this row as garbage rather
                     // than throw an exception
-                    Utility.Assert(parts.Length == names.Length, "File: " + filename);
+                    Utility.Assert(parts.Length == names.Length);
                 }
                 for (int c = 0; c < numColumns; c++) {
                     columns[c].Values[row] = parts[c];
