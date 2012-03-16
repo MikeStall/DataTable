@@ -86,11 +86,49 @@ namespace DataAccess
             }            
         }
 
+        // For large files, just read a few rows. Useful
+        public static DataTable ReadSample(TextReader stream, int size)
+        {
+            char chSeparator = '\0';
+            // Guess separator based on header row.
+            List<string> lines = new List<string>();
+            while (true)
+            {
+                string line = stream.ReadLine();
+                if (line == null || lines.Count > size)
+                {
+                    return ReadArray(lines, chSeparator, false);
+                }
+
+                if (lines.Count == 0)
+                {
+                    chSeparator = GuessSeparateFromHeaderRow(line);
+                }
+
+                lines.Add(line);
+            } 
+        }
+
+        public static char GuessSeparateFromHeaderRow(string header)
+        {
+            if (header.Contains("\t"))
+            {
+                return '\t';
+            }
+            
+            return ',';            
+        }
+
         // Read in a Ascii file that uses the given separate characters.
         // Like CSV. 
         // Supports quotes to escape commas
-        public static DataTable Read(string filename, char separator, bool fAllowMismatch = false) {
+        public static DataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) {
             var lines = File.ReadAllLines(filename);
+
+            if (separator == '\0')
+            {
+                separator = GuessSeparateFromHeaderRow(lines[0]);
+            }
 
             return ReadArray(lines, separator, fAllowMismatch);
         }
