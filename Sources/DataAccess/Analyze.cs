@@ -38,30 +38,21 @@ namespace DataAccess
             Dictionary<string, int> values = new Dictionary<string, int>();
 
             //string name = "unknown";
-            using (TextReader sr = table.OpenText())
-            {
-                string header = sr.ReadLine(); // skip past header
-                char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
+            foreach(RowBase row in table.Rows)
+            {                
 
-                //string[] columnNames = Reader.split(header, ',');
-                //name = columnNames[columnIdx];
-
-                string line;
-                while ((line = sr.ReadLine()) != null)
+                string[] parts = row.Values;
+                if (columnIdx >= parts.Length)
                 {
-                    string[] parts = Reader.split(line, chSeparator);
-                    if (columnIdx >= parts.Length)
-                    {
-                        // malformed input file
-                        continue;
-                    }
-                    string p = parts[columnIdx];
-
-                    int count;
-                    values.TryGetValue(p, out count);
-                    count++;
-                    values[p] = count;
+                    // malformed input file
+                    continue;
                 }
+                string p = parts[columnIdx];
+
+                int count;
+                values.TryGetValue(p, out count);
+                count++;
+                values[p] = count;                
             }
 
             // Get top N?
@@ -103,30 +94,26 @@ namespace DataAccess
             }
             dSummary.Columns = cAll;
 
-
-            using (TextReader sr = table.OpenText())
+            int columnId = 0;
+            foreach (string name in names)
             {
-                int columnId = 0;
-                foreach (string name in names)
+                Tuple<string, int>[] hist = AsHistogram(table, columnId);
+
+                c1.Values[columnId] = name;
+                c2.Values[columnId] = hist.Length.ToString();
+
+                for (int i = 0; i < N; i++)
                 {
-                    Tuple<string, int>[] hist = AsHistogram(table, columnId);
-
-                    c1.Values[columnId] = name;
-                    c2.Values[columnId] = hist.Length.ToString();
-
-                    for (int i = 0; i < N; i++)
+                    if (i >= hist.Length)
                     {
-                        if (i >= hist.Length)
-                        {
-                            break;
-                        }
-                        cAll[i * 2 + kFixed].Values[columnId] = hist[i].Item1;
-                        cAll[i * 2 + 1 + kFixed].Values[columnId] = hist[i].Item2.ToString();
+                        break;
                     }
-
-                    columnId++;
+                    cAll[i * 2 + kFixed].Values[columnId] = hist[i].Item1;
+                    cAll[i * 2 + 1 + kFixed].Values[columnId] = hist[i].Item2.ToString();
                 }
-            }
+
+                columnId++;
+            }            
 
             return dSummary;
         }
@@ -146,49 +133,37 @@ namespace DataAccess
             //
             // Take a first pass and store the hash of each row's unique Key
             //
-            using (TextReader sr = table.OpenText())
+            foreach(RowBase row in table.Rows)            
             {
-                string header = sr.ReadLine(); // skip past header
-                chSeparator = Reader.GuessSeparateFromHeaderRow(header);
+                string[] parts = row.Values;
+                int hash = CalcHash(parts, ci);
 
-                string line;
-                while ((line = sr.ReadLine()) != null)
+                if (allKeys.Contains(hash))
                 {
-                    string[] parts = Reader.split(line, chSeparator);
-                    int hash = CalcHash(parts, ci);
-
-                    if (allKeys.Contains(hash))
-                    {
-                        possibleDups.Add(hash);
-                    }
-                    else
-                    {
-                        allKeys.Add(hash);
-                    }
+                    possibleDups.Add(hash);
                 }
+                else
+                {
+                    allKeys.Add(hash);
+                }                
             }
             allKeys = null; // Free up for GC
 
             //
             // Now take a second pass through the dups.
             //
-            Dictionary<string, string> fullMatch = new Dictionary<string, string>();
+            Dictionary<string, RowBase> fullMatch = new Dictionary<string, RowBase>();
 
             StringBuilder sb = new StringBuilder();
 
             string path = GetTempFileName();
-            using (TextWriter tw = new StreamWriter(path))
+            //using (TextWriter tw = new StreamWriter(path))
+            using (var writer = new CsvWriter(path, table.ColumnNames))
             {
-                using (TextReader sr = table.OpenText())
-                {
-                    string header = sr.ReadLine(); // skip past header
-                    //header = header.Replace(chSeparator, ',');
-                    tw.WriteLine(header);
-
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
+                foreach(RowBase row in table.Rows)
+                {   
                     {
-                        string[] parts = Reader.split(line, chSeparator);
+                        string[] parts = row.Values;
                         int hash = CalcHash(parts, ci);
                         if (!possibleDups.Contains(hash))
                         {
@@ -200,33 +175,32 @@ namespace DataAccess
                         foreach (int i in ci)
                         {
                             sb.Append(parts[i]);
-                            sb.Append(chSeparator);
+                            sb.Append(',');
                         }
                         string key = sb.ToString();
 
                         if (fullMatch.ContainsKey(key))
                         {
-                            string firstLine = fullMatch[key];
+                            RowBase firstLine = fullMatch[key];
                             if (firstLine != null)
                             {
-                                tw.WriteLine(firstLine);
+                                writer.WriteRow(firstLine.Values);
                                 fullMatch[key] = null;
                             }
 
                             // Real dup!
-                            tw.WriteLine(line);
+                            writer.WriteRow(row.Values);
                         }
                         else
                         {
-                            fullMatch[key] = line;
+                            fullMatch[key] = row;
                         }
                     }
                 } // reader
             } // writer
 
 
-            //DataTable d = Reader.ReadCSV(path);
-            DataTable d = Reader.Read(path);
+            DataTable d = Reader.ReadCSV(path);            
             DeleteLocalFile(path);
             return d;
         }

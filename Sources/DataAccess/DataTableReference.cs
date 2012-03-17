@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace DataAccess
 {
@@ -37,11 +38,56 @@ namespace DataAccess
             }
         }
 
-        public TextReader OpenText()
+        private TextReader OpenText()
         {
             return new StreamReader(_filename);
         }
 
+        public IEnumerable<RowBase> Rows
+        {
+            get
+            {
+                int columnCount = this.ColumnNames.Count();
+                TextReader sr = this.OpenText();
 
+                string header = sr.ReadLine(); // skip past header
+                char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
+
+                 string line;
+                 while ((line = sr.ReadLine()) != null)
+                 {
+                     string[] parts = Reader.split(line, chSeparator);
+                     if (parts.Length != columnCount)
+                     {
+                         continue; // skip malformed input
+                     }
+
+                     yield return new RowBase(parts, this);
+                 }
+
+            }
+            
+        }       
+
+
+    }
+
+    public class RowBase
+    {
+        readonly string[] _values;
+        readonly DataTableReference _table;
+
+        internal RowBase(string[] values, DataTableReference table)
+        {
+            _values = values;
+            _table = table;
+        }
+        public string[] Values
+        {
+            get
+            {
+                return _values;
+            }
+        }
     }
 }
