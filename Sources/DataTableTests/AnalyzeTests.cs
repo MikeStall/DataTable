@@ -23,7 +23,21 @@ John, Smith, 34";
             string temp = Path.GetTempFileName();
             File.WriteAllText(temp, content);
 
-            return new DataTableReference(temp);
+            return new DataTableStream(temp);
+        }
+                
+        DataTableReference GetInMemoryTable()
+        {
+            string content =
+@"first,last,age
+Bob, Smith, 12
+Bob, Jones, 34
+Ed,  Smith, 12
+John, Smith, 34";
+
+            TextReader tr = new StringReader(content);
+            DataTable dt = Reader.ReadCSV(tr);
+            return dt;
         }
 
         void AssertEquals(string content, DataTable dt)
@@ -34,9 +48,21 @@ John, Smith, 34";
         }
 
         [Fact]
-        public void GetColumnValueCounts()
+        public void ColumnCountsStreaming()
         {
             DataTableReference dtOriginal = GetTable();
+            GetColumnValueCounts(dtOriginal);
+        }
+
+        [Fact]
+        public void ColumnCountsInMemory()
+        {
+            DataTableReference dtOriginal = GetInMemoryTable();
+            GetColumnValueCounts(dtOriginal);
+        }
+
+        void GetColumnValueCounts(DataTableReference dtOriginal)
+        {
             DataTable result = Analyze.GetColumnValueCounts(dtOriginal, 1);
 
             AssertEquals(
@@ -48,10 +74,21 @@ age,2,12,2
         }
 
         [Fact]
-        public void DuplicatTests()
+        public void DupStreaming()
         {
             DataTableReference dtOriginal = GetTable();
+            DuplicatTests(dtOriginal);
+        }
 
+        [Fact]
+        public void DupInMemory()
+        {
+            DataTableReference dtOriginal = GetInMemoryTable();
+            DuplicatTests(dtOriginal);
+        }
+
+        public void DuplicatTests(DataTableReference dtOriginal)
+        {
             // Select first colyumn
             DataTable dt1 = Analyze.SelectDuplicates(dtOriginal, "first");
 

@@ -10,17 +10,23 @@ namespace DataAccess
 {
     // Represents a data table without loading it into memory. 
     // This is ROW major order, since it reads each row one at a time.
-    public class DataTableReference
+    public abstract class DataTableReference
+    {
+        public abstract IEnumerable<string> ColumnNames { get; }
+        public abstract IEnumerable<Row> Rows { get; }
+    }
+
+    public class DataTableStream : DataTableReference
     {
         private readonly string _filename;
         private string[] _names;
 
-        public DataTableReference(string filename)
+        public DataTableStream(string filename)
         {
             _filename = filename;
         }
         
-        public IEnumerable<string> ColumnNames
+        public override IEnumerable<string> ColumnNames
         {
             get
             {
@@ -43,7 +49,7 @@ namespace DataAccess
             return new StreamReader(_filename);
         }
 
-        public IEnumerable<Row> Rows
+        public override IEnumerable<Row> Rows
         {
             get
             {

@@ -19,7 +19,7 @@ namespace DataAccess
     // While each row is independent, 
     // All operations are on entire columns, including add, remove, reorder.
     // Table is very mutable.
-    public class DataTable {
+    public class DataTable : DataTableReference {
 
         public Column[] Columns { get; set; }
 
@@ -116,7 +116,7 @@ namespace DataAccess
             return c;
         }
 
-        public IEnumerable<string> ColumnNames {
+        public override IEnumerable<string> ColumnNames {
             get {
                 foreach (var c in this.Columns) {
                     yield return c.Name;
@@ -369,7 +369,7 @@ namespace DataAccess
             return s;
         }
 
-        public IEnumerable<Row> Rows {
+        public override IEnumerable<Row> Rows {
             get {
                 int rows = this.NumRows;
                 for (int r = 0; r < rows; r++) {
