@@ -14,7 +14,7 @@ namespace DataAccess
         // Write this single row to a CSV file
         public void WriteCsv(TextWriter tw)
         {
-            DataTable.RawWriteLine(this.Values, tw);
+            CsvWriter.RawWriteLine(this.Values, tw);
         }
 
         public string[] DebugValues

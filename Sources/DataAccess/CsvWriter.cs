@@ -15,28 +15,26 @@ namespace DataAccess
         TextWriter _tw;
         readonly string[] _ColumnNames;
 
-#if false
-        public static void WriteDict<TKey, TValue>(string outputFilename, Dictionary<TKey, TValue> dict)
+        // Write out to the given stream.
+        public CsvWriter(TextWriter writer, IEnumerable<string> columnNames)
         {
-            using (CsvWriter w = new CsvWriter("outputFilename", new string[] { "name", "count" } ))
-            {
-                foreach (var kv in counts)
-                {
-                    w.WriteRow(
-                }
-            }
-        }
-#endif
-
-        // Will overwrite
-        public CsvWriter(string outputFilename, IEnumerable<string> ColumnNames) {
-            Directory.CreateDirectory(Path.GetDirectoryName(outputFilename));
-
-            this._ColumnNames = ColumnNames.ToArray();
-            this._tw = new StreamWriter(outputFilename);
+            this._ColumnNames = columnNames.ToArray();
+            this._tw = writer;
 
             // Write header
-            DataTable.RawWriteLine(ColumnNames, _tw); 
+            RawWriteLine(columnNames, _tw); 
+        }
+
+        // Will overwrite
+        public CsvWriter(string outputFilename, IEnumerable<string> columnNames) 
+            : this(CreateWriterForFile(outputFilename), columnNames)
+        {   
+        }
+
+        static TextWriter CreateWriterForFile(string outputFilename)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFilename));
+            return new StreamWriter(outputFilename);
         }
 
         // Write out specific values for the row. 
@@ -46,7 +44,7 @@ namespace DataAccess
         public void WriteRow(string[] values)
         {
             Utility.Assert(values.Length == _ColumnNames.Length, "Number of items in row doesn't match header count");
-            DataTable.RawWriteLine(values, _tw);
+            RawWriteLine(values, _tw);
         }
 
         
@@ -55,11 +53,11 @@ namespace DataAccess
         // Only take the columns specified by the ctor. If row doesn't have a column, output blank.
         // This ensures we maintain the right schema.        
         public void WriteRow(Row r) {
-            DataTable.RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw);
+            RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw);
         }
 
         public void WriteRow(Row r, IDictionary<string, string> extra) {
-            DataTable.RawWriteLine(ValueHelper(r, extra), _tw);
+            RawWriteLine(ValueHelper(r, extra), _tw);
         }
         IEnumerable<string> ValueHelper(Row r, IDictionary<string, string> extra) {
             foreach (var name in _ColumnNames) {
@@ -80,6 +78,35 @@ namespace DataAccess
             }
         }
 
+        // Write a single line to a CSV
+        public static void RawWriteLine(IEnumerable<string> values, TextWriter tw)
+        {
+            bool first = true;
+            foreach (var c in values)
+            {
+                if (!first)
+                {
+                    tw.Write(',');
+                }
+                first = false;
+                tw.Write(Escape(c));
+            }
+            tw.WriteLine();
+        }
+
+        // Escape a value for writing to CSVs
+        // - Enclose it in quotes if the value has a comma
+        private static string Escape(string s)
+        {
+            if (s == null)
+                return string.Empty;
+
+            if (s.IndexOf(',') >= 0)
+            {
+                return "\"" + s + "\"";
+            }
+            return s;
+        }
 
         public void Close() {
             _tw.Close();

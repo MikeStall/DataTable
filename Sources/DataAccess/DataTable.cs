@@ -198,20 +198,7 @@ namespace DataAccess
 
             AddColumn(c);
         }
-
-
-        public bool HasColumnName(string name) {
-            if (name == null)
-                return false;
-
-            foreach (var c in this.Columns) {
-                if (string.Compare(name, c.Name, true) == 0) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        
         // Add a column on the leftmost posiiton
         void AddColumnFirst(Column c) {
             Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
@@ -252,74 +239,6 @@ namespace DataAccess
             }
         }
 
-        // Write a single line to a CSV
-        public static void RawWriteLine(IEnumerable<string> values, TextWriter tw) {
-            bool first = true;
-            foreach (var c in values) {
-                if (!first) {
-                    tw.Write(',');
-                }
-                first = false;
-                tw.Write(Escape(c));
-            }
-            tw.WriteLine();
-        }
-
-        //static void RawSaveCSV(IEnumerable<Column> columns, string outputFile) {
-            
-        //    using (TextWriter tw = new StreamWriter(outputFile)) {
-        //        RawWriteLine(GetColumnNames(columns), tw);
-        //        foreach(var row in 
-        //    }
-        //}
-
-
-#if true
-        // Just write a set of columns. Useful for saving a subset of columns to a file.
-
-        static void RawSaveCSV(IEnumerable<Column> columns, string outputFile)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
-
-            using (TextWriter tw = new StreamWriter(outputFile)) 
-            {
-                RawSaveCSV(columns, tw);
-            }
-        }
-
-        static void RawSaveCSV(IEnumerable<Column> columns, TextWriter tw)
-        {
-            int numRows = 0;
-
-           
-                // Write headers
-                bool first = true;
-                foreach (var c in columns) {
-                    numRows = c.Values.Length;
-                    if (!first) {
-                        tw.Write(',');
-                    }
-                    first = false;
-                    tw.Write(Escape(c.Name));
-                }
-                tw.WriteLine();
-
-                // Write each row
-                for (int i = 0; i < numRows; i++) {
-                    first = true;
-                    foreach (var c in columns) {
-                        if (!first) {
-                            tw.Write(',');
-                        }
-                        first = false;
-                        tw.Write(Escape(c.Values[i]));
-                    }
-                    tw.WriteLine();
-                }
-            
-        }
-#endif
-
         // Get all columns except the warning column
         static IEnumerable<Column> NoWarning(IEnumerable<Column> columns) {
             foreach (var c in columns) {
@@ -327,46 +246,6 @@ namespace DataAccess
                     continue;
                 yield return c;
             }
-        }
-
-        // Write back out to a csv
-        // Saves both with + without warning column.
-        public void SaveCSV(string output) {
-            // Remove warning column
-            RawSaveCSV(NoWarning(this.Columns), output);
-
-#if false
-            if (this.m_warning != null) {
-                // Save with warning column
-                string warning = Func.OutputName(output, "_warning.csv");
-                RawSaveCSV(this.Columns, warning);
-            }
-#endif
-        }
-
-        public void SaveToStream(TextWriter output)
-        {
-            // Remove warning column
-            RawSaveCSV(NoWarning(this.Columns), output);
-        }
-
-        // Save a project of columns out to a CSV.
-        public void SaveCSV(string output, string[] columnNames) {
-            // Remove warning column
-            RawSaveCSV(GetColumns(columnNames), output);
-        }
-
-
-        // Escape a value for writing to CSVs
-        // - Enclose it in quotes if the value has a comma
-        internal static string Escape(string s) {
-            if (s == null)
-                return string.Empty;
-
-            if (s.IndexOf(',') >= 0) {
-                return "\"" + s + "\"";
-            }
-            return s;
         }
 
         public override IEnumerable<Row> Rows {
@@ -378,6 +257,8 @@ namespace DataAccess
             }
         }
 
+        // Get a specific row by row-index. This works for in-memory, but
+        // can't be done on streaming. 
         public Row GetRow(int rowIndex)
         {
             return new RowInMemory(this, rowIndex);
@@ -424,11 +305,6 @@ namespace DataAccess
             Utility.Assert(this.NumRows == rows2);
 
         }
-
-#if false
-        ABC
-        AC
-#endif
 
         void WarnIfNotEmpty(string name) {
             var c = this.GetColumn(name);
@@ -499,27 +375,5 @@ namespace DataAccess
                 c.Values[r] = newValue;
             }
         }
-
-
-        //// Union rows, return new dataset
-        //public static RawData Union(RawData data1, RawData data2, string cMergeColumnName) {
-        //    string temp = Path.GetTempFileName();
-
-        //    // Should have same headers
-        //    Func.Assert(data1.Columns.Length == data2.Columns.Length);
-
-        //    foreach (var file in filename) {
-        // var data = Reader.ReadCSV(file);
-                
-        //        HashSet<string> set = new HashSet<string>();
-
-        //        foreach (var row in data1.Rows) {
-        //            string column = row[cMergeColumnName];
-        //            set.Add(column);
-        //        }
-
-        //    }
-        //}
     }
-
 }
