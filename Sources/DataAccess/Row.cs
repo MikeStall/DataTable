@@ -7,6 +7,7 @@ namespace DataAccess
 {
     public abstract class Row
     {
+        // $$$ Array is bad here because it implies mutability
         public abstract string[] Values { get ; }
 
         public abstract IEnumerable<string> ColumnNames { get; }
@@ -84,39 +85,4 @@ namespace DataAccess
             }
         }
     }
-
-    // Represent a row.
-    // This spans columns in the dataset.     
-    public class RowInMemory : Row {
-        internal int m_row;
-        readonly internal DataTable m_parent;
-
-        public RowInMemory(DataTable parent, int row)
-        {
-            m_row = row;
-            m_parent = parent;
-
-            Debug.Assert(parent != null);
-            Debug.Assert(row >= 0 && row < m_parent.NumRows);
-        }
-
-        public override string[] Values {
-            get {
-                int numColumns = m_parent.Columns.Length;
-                string[] vals = new string[numColumns];
-
-                for (int i = 0; i < numColumns; i++) {
-                    string value = m_parent.Columns[i].Values[m_row];
-                    vals[i] = value;
-                }
-                return vals;
-            }
-        }
-        public override IEnumerable<string> ColumnNames {
-            get {
-                return this.m_parent.ColumnNames;
-            }
-        }
-    }
-
 }

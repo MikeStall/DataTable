@@ -64,15 +64,15 @@ namespace DataAccess
             return parts.ToArray();
         }
 
-        public static DataTable ReadTab(string filename) {
+        public static MutableDataTable ReadTab(string filename) {
             return Read(filename, '\t');
         }
-        public static DataTable ReadCSV(string filename) {
+        public static MutableDataTable ReadCSV(string filename) {
             return Read(filename, ',');
         }
 
          
-        public static DataTable ReadCSV(TextReader stream)
+        public static MutableDataTable ReadCSV(TextReader stream)
         {
             List<string> lines = new List<string>();
             while (true)
@@ -87,7 +87,7 @@ namespace DataAccess
         }
 
         // For large files, just read a few rows. Useful
-        public static DataTable ReadSample(TextReader stream, int size)
+        public static MutableDataTable ReadSample(TextReader stream, int size)
         {
             char chSeparator = '\0';
             // Guess separator based on header row.
@@ -122,7 +122,7 @@ namespace DataAccess
         // Read in a Ascii file that uses the given separate characters.
         // Like CSV. 
         // Supports quotes to escape commas
-        public static DataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) {
+        public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) {
             var lines = File.ReadAllLines(filename);
 
             if (separator == '\0')
@@ -133,7 +133,7 @@ namespace DataAccess
             return ReadArray(lines, separator, fAllowMismatch);
         }
 
-        private static DataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)
+        private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)
         {
             int numRows = lines.Count - 1;
             // First row is a header
@@ -177,7 +177,7 @@ namespace DataAccess
                 }
             }
 
-            DataTable data = new DataTable();
+            MutableDataTable data = new MutableDataTable();
             data.Columns = columns;
 
 

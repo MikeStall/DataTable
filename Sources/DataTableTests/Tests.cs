@@ -12,7 +12,7 @@ namespace DataTableTests
     public class Scenarios
     {
 
-        static DataTable GetTable()
+        static MutableDataTable GetTable()
         {
             TextReader tr = new StringReader(
 @"name, age,    favorite fruit
@@ -20,14 +20,14 @@ Bob, 20, apples
 Ed, 65, prunes
 Sarah, 40, cherries");
 
-            DataTable dt = Reader.ReadCSV(tr);
+            MutableDataTable dt = Reader.ReadCSV(tr);
             return dt;
         }
 
         [Fact]
         public void Columns()
         {
-            DataTable dt = GetTable();
+            MutableDataTable dt = GetTable();
 
             // Whitespace has been stripped
             Assert.True(dt.HasColumnName("name"));
@@ -44,7 +44,7 @@ Sarah, 40, cherries");
         [Fact]
         public void GetValuesFromRows()
         {
-            DataTable dt = GetTable();
+            MutableDataTable dt = GetTable();
 
             Assert.Equal(3, dt.NumRows);
             Row[] rows = dt.Rows.ToArray();
@@ -60,7 +60,7 @@ Sarah, 40, cherries");
         [Fact]
         public void RowWriteLine()
         {
-            DataTable dt = GetTable();
+            MutableDataTable dt = GetTable();
 
             Row row = dt.GetRow(1);
             StringWriter sw = new StringWriter();
@@ -88,7 +88,7 @@ Sarah, 40, cherries");
             };
 
             // Tests converting an array of structs into a table
-            DataTable dt = Utility.ToTable(ps);
+            MutableDataTable dt = Utility.ToTable(ps);
 
 
             StringWriter sw = new StringWriter();

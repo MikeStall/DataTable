@@ -14,6 +14,8 @@ namespace DataAccess
         TextWriter _tw;
         readonly string[] _ColumnNames;
 
+        bool _ownsStream = false;
+
         // Write out to the given stream.
         public CsvWriter(TextWriter writer, IEnumerable<string> columnNames)
         {
@@ -27,7 +29,8 @@ namespace DataAccess
         // Will overwrite
         public CsvWriter(string outputFilename, IEnumerable<string> columnNames) 
             : this(CreateWriterForFile(outputFilename), columnNames)
-        {   
+        {
+            _ownsStream = true;
         }
 
         static TextWriter CreateWriterForFile(string outputFilename)
@@ -120,6 +123,14 @@ namespace DataAccess
         public void  Dispose()
         {
             this.Flush();
+            if (_ownsStream)
+            {
+                if (_tw != null)
+                {
+                    _tw.Close();
+                    _tw = null;
+                }
+            }
         }
 
         #endregion

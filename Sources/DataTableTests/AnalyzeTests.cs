@@ -11,7 +11,7 @@ namespace DataTableTests
     public class AnalyzeTests
     {
         // Use a small table here because any table update here will likely require a test update.
-        DataTableReference GetTable()
+        DataTable GetTable()
         {
             string content =
 @"first,last,age
@@ -23,10 +23,10 @@ John, Smith, 34";
             string temp = Path.GetTempFileName();
             File.WriteAllText(temp, content);
 
-            return new DataTableStream(temp);
+            return new StreamingDataTable(temp);
         }
                
-        DataTableReference GetInMemoryTable()
+        DataTable GetInMemoryTable()
         {
             string content =
 @"first,last,age
@@ -36,11 +36,11 @@ Ed,  Smith, 12
 John, Smith, 34";
 
             TextReader tr = new StringReader(content);
-            DataTable dt = Reader.ReadCSV(tr);
+            MutableDataTable dt = Reader.ReadCSV(tr);
             return dt;
         }
 
-        void AssertEquals(string content, DataTable dt)
+        void AssertEquals(string content, MutableDataTable dt)
         {
             StringWriter sw = new StringWriter();
             dt.SaveToStream(sw);
@@ -50,15 +50,15 @@ John, Smith, 34";
         [Fact]
         public void ColumnCountsStreaming()
         {
-            DataTableReference dtOriginal = GetTable();
+            DataTable dtOriginal = GetTable();
             GetColumnValueCounts(dtOriginal);
         }
 
         [Fact]
         public void SampleTest()
         {
-            DataTableReference dtOriginal = GetTable();
-            DataTable result = Analyze.SampleTopN(dtOriginal, 2);
+            DataTable dtOriginal = GetTable();
+            MutableDataTable result = Analyze.SampleTopN(dtOriginal, 2);
 
             AssertEquals(
 @"first,last,age
@@ -71,13 +71,13 @@ Bob,Jones,34
         [Fact]
         public void ColumnCountsInMemory()
         {
-            DataTableReference dtOriginal = GetInMemoryTable();
+            DataTable dtOriginal = GetInMemoryTable();
             GetColumnValueCounts(dtOriginal);
         }
 
-        void GetColumnValueCounts(DataTableReference dtOriginal)
+        void GetColumnValueCounts(DataTable dtOriginal)
         {
-            DataTable result = Analyze.GetColumnValueCounts(dtOriginal, 1);
+            MutableDataTable result = Analyze.GetColumnValueCounts(dtOriginal, 1);
 
             AssertEquals(
 @"column name,count,Top Value 0,Top Occurrence 0
@@ -90,21 +90,21 @@ age,2,12,2
         [Fact]
         public void DupStreaming()
         {
-            DataTableReference dtOriginal = GetTable();
+            DataTable dtOriginal = GetTable();
             DuplicatTests(dtOriginal);
         }
 
         [Fact]
         public void DupInMemory()
         {
-            DataTableReference dtOriginal = GetInMemoryTable();
+            DataTable dtOriginal = GetInMemoryTable();
             DuplicatTests(dtOriginal);
         }
 
-        public void DuplicatTests(DataTableReference dtOriginal)
+        public void DuplicatTests(DataTable dtOriginal)
         {
             // Select first colyumn
-            DataTable dt1 = Analyze.SelectDuplicates(dtOriginal, "first");
+            MutableDataTable dt1 = Analyze.SelectDuplicates(dtOriginal, "first");
 
             AssertEquals(
 @"first,last,age
@@ -113,7 +113,7 @@ Bob,Jones,34
 ", dt1);
 
             // Select two columns
-            DataTable dt2 = Analyze.SelectDuplicates(dtOriginal, "last", "age");
+            MutableDataTable dt2 = Analyze.SelectDuplicates(dtOriginal, "last", "age");
 
             AssertEquals(
 @"first,last,age
@@ -123,7 +123,7 @@ Ed,Smith,12
 
 
             // Select two columns, empty
-            DataTable dt3 = Analyze.SelectDuplicates(dtOriginal, "first", "age");
+            MutableDataTable dt3 = Analyze.SelectDuplicates(dtOriginal, "first", "age");
 
             AssertEquals(
 @"first,last,age

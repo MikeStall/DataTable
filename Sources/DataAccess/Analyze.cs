@@ -14,7 +14,7 @@ namespace DataAccess
     {
         // Return a sample that's the top N records from a table.
         // This is useful for a large table where you want to quickly get a reference
-        public static DataTable SampleTopN(DataTableReference table, int topN)
+        public static MutableDataTable SampleTopN(DataTable table, int topN)
         {
             if (topN <= 0)
             {
@@ -49,21 +49,21 @@ namespace DataAccess
             using (var buffer2 = new MemoryStream(buffer.GetBuffer(), 0, (int) lengthWritten))
             using (TextReader reader = new StreamReader(buffer2))
             {
-                DataTable dt = Reader.ReadCSV(reader);
+                MutableDataTable dt = Reader.ReadCSV(reader);
                 return dt;
             } // closed reader and buffer
 
 
         }
 
-        public static int[] GetColumnIndexFromNames(DataTableReference table, string[] columnNames)
+        public static int[] GetColumnIndexFromNames(DataTable table, string[] columnNames)
         {
             return Array.ConvertAll(columnNames, columnName => GetColumnIndexFromName(table, columnName));
         }
 
         // Return 0-based index of column with matching name.
         // throws an exception if not found
-        public static int GetColumnIndexFromName(DataTableReference table, string columnName)
+        public static int GetColumnIndexFromName(DataTable table, string columnName)
         {
             string[] columnNames = table.ColumnNames.ToArray();
             return Utility.GetColumnIndexFromName(columnNames, columnName);
@@ -72,12 +72,12 @@ namespace DataAccess
 
         // Extract column as a histogram, sorted in descending order by frequency.
         // Return as Tuple because it has type safety, data-table does not. 
-        public static Tuple<string, int>[] AsHistogram(DataTableReference table, string columnName)
+        public static Tuple<string, int>[] AsHistogram(DataTable table, string columnName)
         {
             int i = GetColumnIndexFromName(table, columnName);
             return AsHistogram(table, i);
         }
-        public static Tuple<string, int>[] AsHistogram(DataTableReference table, int columnIdx)
+        public static Tuple<string, int>[] AsHistogram(DataTable table, int columnIdx)
         {
             Dictionary<string, int> values = new Dictionary<string, int>();
 
@@ -117,12 +117,12 @@ namespace DataAccess
         //  r1 = column name
         //  r2 = # of unique elements in that column
         // Most common occurences?
-        public static DataTable GetColumnValueCounts(DataTableReference table, int N)
+        public static MutableDataTable GetColumnValueCounts(DataTable table, int N)
         {
             string[] names = table.ColumnNames.ToArray();
             int count = names.Length;
 
-            DataTable dSummary = new DataTable();
+            MutableDataTable dSummary = new MutableDataTable();
             Column c1 = new Column("column name", count);
             Column c2 = new Column("count", count);
 
@@ -164,7 +164,7 @@ namespace DataAccess
 
         // Find all rows that have dups for the given columns.
         // This uses a multi-pass algorithm to operate on a large data file.
-        public static DataTable SelectDuplicates(DataTableReference table, params string[] columnNames)
+        public static MutableDataTable SelectDuplicates(DataTable table, params string[] columnNames)
         {
             int[] ci = GetColumnIndexFromNames(table, columnNames);
 
@@ -243,7 +243,7 @@ namespace DataAccess
             } // writer
 
 
-            DataTable d = Reader.ReadCSV(path);
+            MutableDataTable d = Reader.ReadCSV(path);
             DeleteLocalFile(path);
             return d;
         }

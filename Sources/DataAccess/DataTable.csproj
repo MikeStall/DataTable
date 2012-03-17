@@ -43,13 +43,14 @@
     <Compile Include="Analyze.cs" />
     <Compile Include="Column.cs" />
     <Compile Include="CsvWriter.cs" />
+    <Compile Include="MutableDataTable.cs" />
     <Compile Include="DataTable.cs" />
-    <Compile Include="DataTableReference.cs" />
     <Compile Include="Readers.cs" />
     <Compile Include="Row.cs" />
     <Compile Include="Dictionary2d.cs" />
     <Compile Include="DiscreteValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StreamingDataTable.cs" />
     <Compile Include="Utility.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

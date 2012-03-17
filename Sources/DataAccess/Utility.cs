@@ -63,7 +63,7 @@ namespace DataAccess
         }
 
         // All strings become upper case (for comparison)
-        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(DataTable table, string keyName, string valueName)
+        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(MutableDataTable table, string keyName, string valueName)
         {
             // $$$ Should this be on DataTable?
             int cKey = Utility.GetColumnIndexFromName(table.ColumnNames, keyName);
@@ -71,14 +71,14 @@ namespace DataAccess
             return ToDict<TKey, TValue>(table, cKey, cValue);
         }
 
-        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(DataTable table)
+        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(MutableDataTable table)
         {
             // Assume first two
             return ToDict<TKey, TValue>(table, 0, 1);
         }
 
         // column ids to use for keys and values.
-        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(DataTable table, int cKey, int cVal)
+        public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(MutableDataTable table, int cKey, int cVal)
         {
             Dictionary<TKey, TValue> d = new Dictionary<TKey, TValue>();
             for (int row = 0; row < table.NumRows; row++)
@@ -98,7 +98,7 @@ namespace DataAccess
 
         // Dynamically Flatten. 
         // $$$ Need way to gaurantee that flatten order matches column names.
-        public static DataTable ToTableX<T>(IEnumerable<T> a, params string[] columnNames)
+        public static MutableDataTable ToTableX<T>(IEnumerable<T> a, params string[] columnNames)
         {
             // $$$ How to infer column names?
             // Flatten doesn't have a definitive order.
@@ -106,7 +106,7 @@ namespace DataAccess
             
             int count = a.Count();
 
-            DataTable d = new DataTable();
+            MutableDataTable d = new MutableDataTable();
 
             // Alloc columns
             Column[] cs = new Column[columnNames.Length];
@@ -198,7 +198,7 @@ namespace DataAccess
             return p.GetValue(o, null);
         }
 
-        public static DataTable ToTable<T>(IEnumerable<T> a)
+        public static MutableDataTable ToTable<T>(IEnumerable<T> a)
         {
             string[] columnNames = Array.ConvertAll(typeof(T).GetProperties(), prop => prop.Name);
 
@@ -206,9 +206,9 @@ namespace DataAccess
         }
 
         // $$$ Merge with the more dynamic ToTable.
-        public static DataTable ToTable<T1, T2>(Tuple<T1, T2>[] a, string name1, string name2)
+        public static MutableDataTable ToTable<T1, T2>(Tuple<T1, T2>[] a, string name1, string name2)
         {
-            DataTable d = new DataTable();
+            MutableDataTable d = new MutableDataTable();
 
             int count = a.Length;
             Column cKeys = new Column(name1, count);
@@ -228,9 +228,9 @@ namespace DataAccess
                 
         // Helper to convert a dictionary into a data-table
         // Can be useful for saving as a CSV back into the filestore.
-        public static DataTable ToTable<TKey, TValue>(IDictionary<TKey, TValue> dict, string keyName, string valName)
+        public static MutableDataTable ToTable<TKey, TValue>(IDictionary<TKey, TValue> dict, string keyName, string valName)
         {
-            DataTable d = new DataTable();
+            MutableDataTable d = new MutableDataTable();
 
             int count = dict.Count;
             Column cKeys = new Column(keyName, count);
@@ -252,10 +252,10 @@ namespace DataAccess
         // TKey1 is rows, TKey1 is columns.
         // Data table column names are obtained from key values.
         // Column 0 is set of row values.
-        public static DataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict)
+        public static MutableDataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict)
         {
             // TKey1 is rows, TKey2 is values.
-            DataTable d = new DataTable();
+            MutableDataTable d = new MutableDataTable();
 
             var rows = dict.Key1;
             int count = rows.Count();
