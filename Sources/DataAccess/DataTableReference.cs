@@ -18,7 +18,7 @@ namespace DataAccess
         {
             _filename = filename;
         }
-
+        
         public IEnumerable<string> ColumnNames
         {
             get
