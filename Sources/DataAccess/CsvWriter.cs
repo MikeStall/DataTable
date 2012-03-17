@@ -63,7 +63,9 @@ namespace DataAccess
         }
         IEnumerable<string> ValueHelper(Row r, IDictionary<string, string> extra) {
             foreach (var name in _ColumnNames) {
-                if (r.m_parent.HasColumnName(name)) {
+                //if (r.m_parent.HasColumnName(name)) 
+                if (true) // $$$ fix
+                {
                     yield return r[name];
                     continue;
                 }

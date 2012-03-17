@@ -149,7 +149,7 @@ namespace DataAccess
             // Apply splitter function 
             int rows = this.NumRows;
             for (int r = 0; r < rows; r++) {
-                Row row = new Row(this, r);
+                Row row = new RowInMemory(this, r);
 
                 var result = fpSplit(row);
 
@@ -373,14 +373,14 @@ namespace DataAccess
             get {
                 int rows = this.NumRows;
                 for (int r = 0; r < rows; r++) {
-                    yield return new Row(this, r);
+                    yield return new RowInMemory(this, r);
                 }
             }
         }
 
         public Row GetRow(int rowIndex)
         {
-            return new Row(this, rowIndex);
+            return new RowInMemory(this, rowIndex);
         }
 
         // Only keep rows where the predicate returns true
@@ -393,7 +393,7 @@ namespace DataAccess
             // which rows to keep
             int rows = this.NumRows;
             for (int r = 0; r < rows; r++) {
-                Row row = new Row(this, r);
+                Row row = new RowInMemory(this, r);
 
                 bool keep = predicate(row);
                 if (keep) {
@@ -494,7 +494,7 @@ namespace DataAccess
             this.AddColumn(c);
                         
             for (int r = 0; r < c.Values.Length; r++) {
-                Row row = new Row(this, r);
+                Row row = new RowInMemory(this, r);
                 var newValue = func(row);
                 c.Values[r] = newValue;
             }

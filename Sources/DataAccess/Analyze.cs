@@ -38,7 +38,7 @@ namespace DataAccess
             Dictionary<string, int> values = new Dictionary<string, int>();
 
             //string name = "unknown";
-            foreach(RowBase row in table.Rows)
+            foreach(Row row in table.Rows)
             {                
 
                 string[] parts = row.Values;
@@ -133,7 +133,7 @@ namespace DataAccess
             //
             // Take a first pass and store the hash of each row's unique Key
             //
-            foreach(RowBase row in table.Rows)            
+            foreach(Row row in table.Rows)            
             {
                 string[] parts = row.Values;
                 int hash = CalcHash(parts, ci);
@@ -152,7 +152,7 @@ namespace DataAccess
             //
             // Now take a second pass through the dups.
             //
-            Dictionary<string, RowBase> fullMatch = new Dictionary<string, RowBase>();
+            Dictionary<string, Row> fullMatch = new Dictionary<string, Row>();
 
             StringBuilder sb = new StringBuilder();
 
@@ -160,7 +160,7 @@ namespace DataAccess
             //using (TextWriter tw = new StreamWriter(path))
             using (var writer = new CsvWriter(path, table.ColumnNames))
             {
-                foreach(RowBase row in table.Rows)
+                foreach(Row row in table.Rows)
                 {   
                     {
                         string[] parts = row.Values;
@@ -181,7 +181,7 @@ namespace DataAccess
 
                         if (fullMatch.ContainsKey(key))
                         {
-                            RowBase firstLine = fullMatch[key];
+                            Row firstLine = fullMatch[key];
                             if (firstLine != null)
                             {
                                 writer.WriteRow(firstLine.Values);

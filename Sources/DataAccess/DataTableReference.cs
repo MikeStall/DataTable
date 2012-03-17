@@ -43,7 +43,7 @@ namespace DataAccess
             return new StreamReader(_filename);
         }
 
-        public IEnumerable<RowBase> Rows
+        public IEnumerable<Row> Rows
         {
             get
             {
@@ -62,7 +62,7 @@ namespace DataAccess
                          continue; // skip malformed input
                      }
 
-                     yield return new RowBase(parts, this);
+                     yield return new RowFromStreamingTable(parts, this);
                  }
 
             }
@@ -72,22 +72,27 @@ namespace DataAccess
 
     }
 
-    public class RowBase
+    public class RowFromStreamingTable : Row
     {
         readonly string[] _values;
         readonly DataTableReference _table;
 
-        internal RowBase(string[] values, DataTableReference table)
+        internal RowFromStreamingTable(string[] values, DataTableReference table)
         {
             _values = values;
             _table = table;
         }
-        public string[] Values
+        public override string[] Values
         {
             get
             {
                 return _values;
             }
+        }
+
+        public override IEnumerable<string> ColumnNames
+        {
+            get { return _table.ColumnNames; }
         }
     }
 }
