@@ -44,6 +44,7 @@
     <Compile Include="Column.cs" />
     <Compile Include="CsvWriter.cs" />
     <Compile Include="DataTable.cs" />
+    <Compile Include="DataTableReference.cs" />
     <Compile Include="Readers.cs" />
     <Compile Include="Row.cs" />
     <Compile Include="Dictionary2d.cs" />

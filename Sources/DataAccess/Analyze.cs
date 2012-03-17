@@ -6,236 +6,155 @@ using System.IO;
 
 namespace DataAccess
 {
-#if false
-    // Provide analytic functions
-    // $$$ Rationalize FileStore,FileDescriptor with DataTable
+    /// <summary>
+    /// Analysis operations on tables, like joins, histogram, dup search, filter, etc.
+    /// These handle large tables.
+    /// </summary>
     public static class Analyze
     {
-        // For azure, must be able to override.
-        public static Func<string> GetTempFileName = System.IO.Path.GetTempFileName;
-
-        private static void DeleteLocalFile(string file)
+        public static int[] GetColumnIndexFromNames(DataTableReference table, string[] columnNames)
         {
-            try
-            {
-                System.IO.File.Delete(file);
-            }
-            catch
-            {
-                // Not fatal.
-            }
+            return Array.ConvertAll(columnNames, columnName => GetColumnIndexFromName(table, columnName));
         }
 
-        // Join on the column name.
-        // What to do with unique values?
-        // column name must have unique values within each datatable.
-        public static DataTable Join(DataTable d1, DataTable d2, string columnName)
+        // Return 0-based index of column with matching name.
+        // throws an exception if not found
+        public static int GetColumnIndexFromName(DataTableReference table, string columnName)
         {
-            Column c1 = d1.GetColumn(columnName);
-            if (c1 == null)
+            string[] columnNames = table.ColumnNames.ToArray();
+            return Utility.GetColumnIndexFromName(columnNames, columnName);
+        }
+
+
+        // Extract column as a histogram, sorted in descending order by frequency.
+        // Return as Tuple because it has type safety, data-table does not. 
+        public static Tuple<string, int>[] AsHistogram(DataTableReference table, string columnName)
+        {
+            int i = GetColumnIndexFromName(table, columnName);
+            return AsHistogram(table, i);
+        }
+        public static Tuple<string, int>[] AsHistogram(DataTableReference table, int columnIdx)
+        {
+            Dictionary<string, int> values = new Dictionary<string, int>();
+
+            //string name = "unknown";
+            using (TextReader sr = table.OpenText())
             {
-                throw new InvalidOperationException("Missing column");
-            }
-            Column c2 = d2.GetColumn(columnName);
-            if (c2 == null)
-            {
-                throw new InvalidOperationException("Missing column");
-            }
+                string header = sr.ReadLine(); // skip past header
+                char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
 
-            // Place d1 in first set of columns, and d2 in second set.
-            int kColumn = d1.Columns.Length;
-            int kTotalColumns = kColumn + d2.Columns.Length;
+                //string[] columnNames = Reader.split(header, ',');
+                //name = columnNames[columnIdx];
 
-            // Indices into new table where join columns are.
-            int joinColumn1 = Utility.GetColumnIndexFromName(d1.ColumnNames, columnName);
-            int joinColumn2 = Utility.GetColumnIndexFromName(d2.ColumnNames, columnName) + kColumn;
-
-            // $$$ could really optimize. Sort both on column and then zip.
-            Dictionary<string, int> m1 = GetRowIndex(c1);
-            Dictionary<string, int> m2 = GetRowIndex(c2);
-
-            // $$$ column names may not be unique.
-
-            //string[] headers = d1.ColumnNames.Union(d2.ColumnNames).ToArray();
-            
-            string[] headers = new string[kTotalColumns];
-            Array.Copy(d1.ColumnNames.ToArray(), 0, headers, 0, kColumn);
-            Array.Copy(d2.ColumnNames.ToArray(), 0, headers, kColumn, kTotalColumns - kColumn);
-
-            string[] values = new string[headers.Length];
-
-            string path = GetTempFileName();
-            using (CsvWriter tw = new CsvWriter(path, headers))
-            {
-
-                foreach (var kv in m1)
+                string line;
+                while ((line = sr.ReadLine()) != null)
                 {
-                    Clear(values);                    
-
-                    string key = kv.Key; // join column
-                    int r1 = kv.Value;
-                    int r2;
-                    if (m2.TryGetValue(key, out r2))
+                    string[] parts = Reader.split(line, chSeparator);
+                    if (columnIdx >= parts.Length)
                     {
-                        // In both.  write out
-                        CopyRowIntoArray(values, kColumn, d2, r2);
-    
-                        m2.Remove(key);
+                        // malformed input file
+                        continue;
                     }
-                    else
-                    {
-                        // Only in M1. 
-                    }
+                    string p = parts[columnIdx];
 
-                    CopyRowIntoArray(values, 0, d1, r1);
-                    values[joinColumn1] = values[joinColumn2] = key;
-
-                    tw.WriteRow(values);
+                    int count;
+                    values.TryGetValue(p, out count);
+                    count++;
+                    values[p] = count;
                 }
+            }
 
-                // We remove all of M1's items from m2, so M2 is just unique items now. (possibly 0).
-                // Tag those onto the end.
+            // Get top N?
 
-                foreach (var kv in m2)
+            var items = from kv in values
+                        orderby kv.Value descending
+                        select Tuple.Create(kv.Key, kv.Value)
+                        ;
+
+            //int N = 10;
+            //return items.Take(N).ToArray();
+            return items.ToArray();
+        }
+
+
+        // Look down each column and count uniqueness.
+        // Returns a datatable of records where:
+        //  r1 = column name
+        //  r2 = # of unique elements in that column
+        // Most common occurences?
+        public static DataTable GetColumnValueCounts(DataTableReference table, int N)
+        {
+            string[] names = table.ColumnNames.ToArray();
+            int count = names.Length;
+
+            DataTable dSummary = new DataTable();
+            Column c1 = new Column("column name", count);
+            Column c2 = new Column("count", count);
+
+            int kFixed = 2;
+            Column[] cAll = new Column[kFixed + N * 2];
+            cAll[0] = c1;
+            cAll[1] = c2;
+
+            for (int i = 0; i < N; i++)
+            {
+                cAll[i * 2 + kFixed] = new Column("Top Value " + i, count);
+                cAll[i * 2 + 1 + kFixed] = new Column("Top Occurrence " + i, count);
+            }
+            dSummary.Columns = cAll;
+
+
+            using (TextReader sr = table.OpenText())
+            {
+                int columnId = 0;
+                foreach (string name in names)
                 {
-                    int r2 = kv.Value;
-                    Clear(values);
-                    CopyRowIntoArray(values, kColumn, d2, r2);
-                    values[joinColumn1] = values[joinColumn2] = kv.Key;
+                    Tuple<string, int>[] hist = AsHistogram(table, columnId);
 
-                    tw.WriteRow(values);
-                }
+                    c1.Values[columnId] = name;
+                    c2.Values[columnId] = hist.Length.ToString();
 
-            } // close tw
-
-            DataTable t = Reader.ReadCSV(path);
-            DeleteLocalFile(path);
-
-            // Remove duplicate columns.
-            t.RemoveColumn(joinColumn2);
-
-            return t;
-        }
-
-        static void CopyRowIntoArray(string[] values, int index, DataTable d, int row)
-        {
-            for (int c = 0; c < d.Columns.Length; c++)
-            {
-                values[index] = d.Columns[c].Values[row];
-                index++;
-            }
-        }
-
-        static void Clear(string[] values)
-        {
-            for (int i = 0; i < values.Length; i++)
-            {
-                values[i] = string.Empty;
-            }
-        }
-
-        static Dictionary<string, int> GetRowIndex(Column c)
-        {
-            Dictionary<string, int> d = new Dictionary<string, int>();
-
-            for (int row = 0; row < c.Values.Length; row++)
-            {
-                string x = c.Values[row].ToUpperInvariant();
-
-                // If this add fails, it means the column we're doing a join on has duplicate entries.
-                d.Add(x, row); // verifies uniqueness
-            }
-            return d;
-        }
-
-
-        // Get a sample of N rows from the dataset
-        // May be potentially large.
-        // $$$ Pull rows from equal probability
-        // $$$ Put in common utilities.
-        public static DataTable GetSample(IFileStore fs, FileDescriptor fd, int N)
-        {
-            using (TextReader sr = fs.OpenText(fd))
-            {
-                string path = GetTempFileName();
-                using (TextWriter tw = new StreamWriter(path))
-                {
-                    string header = sr.ReadLine();
-                    tw.WriteLine(header);
-
-                    while (true)
+                    for (int i = 0; i < N; i++)
                     {
-                        string line = sr.ReadLine();
-                        if (N == 0)
+                        if (i >= hist.Length)
                         {
                             break;
                         }
-                        N--;
-                        tw.WriteLine(line);
+                        cAll[i * 2 + kFixed].Values[columnId] = hist[i].Item1;
+                        cAll[i * 2 + 1 + kFixed].Values[columnId] = hist[i].Item2.ToString();
                     }
+
+                    columnId++;
                 }
-
-                DataTable d = Reader.ReadCSV(path);
-                DeleteLocalFile(path);
-                return d;
             }
-        }
 
-        // Zip down file, extract any row that matches the given selection. 
-        public static DataTable GetSelection(IFileStore fs, FileDescriptor fd, Predicate<string[]> fpSelector)
-        {
-            int count = 0;
-            using (TextReader sr = fs.OpenText(fd))
-            {
-
-                string path = GetTempFileName();
-                using (TextWriter tw = new StreamWriter(path))
-                {
-                    string header = sr.ReadLine();
-                    tw.WriteLine(header);
-
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
-                    {
-                        string[] parts = Reader.split(line, ',');
-
-                        if (fpSelector(parts))
-                        {
-                            tw.WriteLine(line);
-                            count++;
-                        }
-                    }
-                }
-
-
-                DataTable d = Reader.ReadCSV(path);
-                DeleteLocalFile(path);
-                return d;
-            }
+            return dSummary;
         }
 
         // Find all rows that have dups for the given columns.
         // This uses a multi-pass algorithm to operate on a large data file.
-        public static DataTable SelectDuplicates(IFileStore fs, FileDescriptor fdInput, params string[] columnNames)
+        public static DataTable SelectDuplicates(DataTableReference table, params string[] columnNames)
         {
-            int[] ci = Utility.GetColumnIndexFromNames(fs, fdInput, columnNames);
+            int[] ci = GetColumnIndexFromNames(table, columnNames);
 
             // Store on hash keys first. Use hash keys because they're compact and efficient for large data sets
             // But then we do need to handle collisions. 
             HashSet<int> allKeys = new HashSet<int>();
             HashSet<int> possibleDups = new HashSet<int>();
 
+            char chSeparator;
             //
             // Take a first pass and store the hash of each row's unique Key
             //
-            using (TextReader sr = fs.OpenText(fdInput))
+            using (TextReader sr = table.OpenText())
             {
                 string header = sr.ReadLine(); // skip past header
+                chSeparator = Reader.GuessSeparateFromHeaderRow(header);
 
                 string line;
                 while ((line = sr.ReadLine()) != null)
                 {
-                    string[] parts = Reader.split(line, ',');
+                    string[] parts = Reader.split(line, chSeparator);
                     int hash = CalcHash(parts, ci);
 
                     if (allKeys.Contains(hash))
@@ -260,15 +179,16 @@ namespace DataAccess
             string path = GetTempFileName();
             using (TextWriter tw = new StreamWriter(path))
             {
-                using (TextReader sr = fs.OpenText(fdInput))
+                using (TextReader sr = table.OpenText())
                 {
                     string header = sr.ReadLine(); // skip past header
+                    //header = header.Replace(chSeparator, ',');
                     tw.WriteLine(header);
 
                     string line;
                     while ((line = sr.ReadLine()) != null)
                     {
-                        string[] parts = Reader.split(line, ',');
+                        string[] parts = Reader.split(line, chSeparator);
                         int hash = CalcHash(parts, ci);
                         if (!possibleDups.Contains(hash))
                         {
@@ -280,7 +200,7 @@ namespace DataAccess
                         foreach (int i in ci)
                         {
                             sb.Append(parts[i]);
-                            sb.Append(',');
+                            sb.Append(chSeparator);
                         }
                         string key = sb.ToString();
 
@@ -305,7 +225,8 @@ namespace DataAccess
             } // writer
 
 
-            DataTable d = Reader.ReadCSV(path);
+            //DataTable d = Reader.ReadCSV(path);
+            DataTable d = Reader.Read(path);
             DeleteLocalFile(path);
             return d;
         }
@@ -321,104 +242,19 @@ namespace DataAccess
             return h;
         }
 
-        // Extract column as a histogram, sorted in descending order by frequency.
-        // Return as Tuple because it has type safety, data-table does not. 
-        public static Tuple<string, int>[] AsHistogram(IFileStore fs, FileDescriptor fdInput, string columnName)
+        // For azure, must be able to override.
+        public static Func<string> GetTempFileName = System.IO.Path.GetTempFileName;
+
+        private static void DeleteLocalFile(string file)
         {
-            int i = Utility.GetColumnIndexFromName(fs, fdInput, columnName);
-            return AsHistogram(fs, fdInput, i);
-        }
-        public static Tuple<string, int>[] AsHistogram(IFileStore fs, FileDescriptor fdInput, int columnIdx)
-        {
-            Dictionary<string, int> values = new Dictionary<string, int>();
-
-            //string name = "unknown";
-            using (TextReader sr = fs.OpenText(fdInput))
+            try
             {
-                string header = sr.ReadLine(); // skip past header
-                //string[] columnNames = Reader.split(header, ',');
-                //name = columnNames[columnIdx];
-
-                string line;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    string[] parts = Reader.split(line, ',');
-                    string p = parts[columnIdx];
-
-                    int count;
-                    values.TryGetValue(p, out count);
-                    count++;
-                    values[p] = count;
-                }
+                System.IO.File.Delete(file);
             }
-
-            // Get top N?
-
-            var items = from kv in values
-                        orderby kv.Value descending
-                        select Tuple.Create(kv.Key, kv.Value)
-                        ;
-
-            //int N = 10;
-            //return items.Take(N).ToArray();
-            return items.ToArray();
-        }
-
-        // Look down each column and count uniqueness.
-        // Returns a datatable of records where:
-        //  r1 = column name
-        //  r2 = # of unique elements in that column
-        // Most common occurences?
-        public static DataTable GetColumnValueCounts(IFileStore fs, FileDescriptor fdInput, int N)
-        {
-            string[] names = Utility.GetColumnNames(fs, fdInput);
-            int count = names.Length;
-
-            DataTable dSummary = new DataTable();
-            Column c1 = new Column("column name", count);
-            Column c2 = new Column("count", count);
-
-            int kFixed = 2;
-            Column[] cAll = new Column[kFixed + N * 2];
-            cAll[0] = c1;
-            cAll[1] = c2;
-
-            for (int i = 0; i < N; i++)
+            catch
             {
-                cAll[i * 2 + kFixed] = new Column("Top Value " + i, count);
-                cAll[i * 2 + 1 + kFixed] = new Column("Top Occurrence " + i, count);
+                // Not fatal.
             }
-            dSummary.Columns = cAll;
-
-
-            using (TextReader sr = fs.OpenText(fdInput))
-            {
-                int columnId = 0;
-                foreach (string name in names)
-                {
-                    Tuple<string, int>[] hist = AsHistogram(fs, fdInput, columnId);
-
-                    c1.Values[columnId] = name;
-                    c2.Values[columnId] = hist.Length.ToString();
-
-                    for (int i = 0; i < N; i++)
-                    {
-                        if (i >= hist.Length)
-                        {
-                            break;
-                        }
-                        cAll[i * 2 + kFixed].Values[columnId] = hist[i].Item1;
-                        cAll[i * 2 + 1 + kFixed].Values[columnId] = hist[i].Item2.ToString();
-                    }
-
-                    columnId++;
-                }
-            }
-
-            return dSummary;
         }
-        
-        
     }
-#endif
 }
