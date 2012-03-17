@@ -30,6 +30,8 @@ namespace DataAccess
             return false;
         }
 
+        // $$$ may add overload to just save a project of columns?
+
         // Write this table out to the stream, in a CSV format.
         // Provide an non-optimized basic version.,
         public virtual void SaveToStream(TextWriter output)

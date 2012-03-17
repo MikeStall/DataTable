@@ -25,7 +25,7 @@ John, Smith, 34";
 
             return new DataTableStream(temp);
         }
-                
+               
         DataTableReference GetInMemoryTable()
         {
             string content =
@@ -53,6 +53,20 @@ John, Smith, 34";
             DataTableReference dtOriginal = GetTable();
             GetColumnValueCounts(dtOriginal);
         }
+
+        [Fact]
+        public void SampleTest()
+        {
+            DataTableReference dtOriginal = GetTable();
+            DataTable result = Analyze.SampleTopN(dtOriginal, 2);
+
+            AssertEquals(
+@"first,last,age
+Bob,Smith,12
+Bob,Jones,34
+", result);
+        }
+
 
         [Fact]
         public void ColumnCountsInMemory()

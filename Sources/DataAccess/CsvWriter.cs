@@ -10,7 +10,6 @@ namespace DataAccess
 {
     // Helper to write a CSV file. 
     // Ensures normalized view.
-    // $$$ Use this for Save? (not as optimized since each row is a validation)
     public class CsvWriter : IDisposable {
         TextWriter _tw;
         readonly string[] _ColumnNames;
@@ -108,19 +107,19 @@ namespace DataAccess
             return s;
         }
 
-        public void Close() {
-            _tw.Close();
-            this.Dispose();
+        // Don't close the underlying stream, we don't own it. But we can flush it.
+        public void Flush() {
+            if (_tw != null)
+            {
+                _tw.Flush();
+            }
         }
     
         #region IDisposable Members
 
         public void  Dispose()
         {
-            if (_tw != null) {
-                _tw.Dispose();
-                _tw = null;
-            }
+            this.Flush();
         }
 
         #endregion

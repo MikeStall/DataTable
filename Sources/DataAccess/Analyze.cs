@@ -12,6 +12,50 @@ namespace DataAccess
     /// </summary>
     public static class Analyze
     {
+        // Return a sample that's the top N records from a table.
+        // This is useful for a large table where you want to quickly get a reference
+        public static DataTable SampleTopN(DataTableReference table, int topN)
+        {
+            if (topN <= 0)
+            {
+                throw new ArgumentOutOfRangeException("topN", "sample must be a positive integer");
+            }
+
+            var buffer = new MemoryStream();
+            long lengthWritten;
+            using (StreamWriter output = new StreamWriter(buffer))
+            {
+                using (var writer = new CsvWriter(output, table.ColumnNames))
+                {
+                    foreach (var row in table.Rows)
+                    {
+                        if (topN == 0)
+                        {
+                            break;
+                        }
+                        topN--;
+                        writer.WriteRow(row);
+                    }
+                } // dispose to flush, 
+
+                // capture after we flushed the writer (so all bytes are written) and
+                // before we dipose the MemoryStream (so the property is still readable)
+                // Need this so that we don't read a bunch of '\0' characters after the 
+                // end of the written range.
+                lengthWritten = buffer.Position; 
+            } // close output and buffer
+
+            // Previous memory stream was disposed, so create a new stream wrappover over the buffer.
+            using (var buffer2 = new MemoryStream(buffer.GetBuffer(), 0, (int) lengthWritten))
+            using (TextReader reader = new StreamReader(buffer2))
+            {
+                DataTable dt = Reader.ReadCSV(reader);
+                return dt;
+            } // closed reader and buffer
+
+
+        }
+
         public static int[] GetColumnIndexFromNames(DataTableReference table, string[] columnNames)
         {
             return Array.ConvertAll(columnNames, columnName => GetColumnIndexFromName(table, columnName));
@@ -38,8 +82,8 @@ namespace DataAccess
             Dictionary<string, int> values = new Dictionary<string, int>();
 
             //string name = "unknown";
-            foreach(Row row in table.Rows)
-            {                
+            foreach (Row row in table.Rows)
+            {
 
                 string[] parts = row.Values;
                 if (columnIdx >= parts.Length)
@@ -52,7 +96,7 @@ namespace DataAccess
                 int count;
                 values.TryGetValue(p, out count);
                 count++;
-                values[p] = count;                
+                values[p] = count;
             }
 
             // Get top N?
@@ -113,7 +157,7 @@ namespace DataAccess
                 }
 
                 columnId++;
-            }            
+            }
 
             return dSummary;
         }
@@ -129,11 +173,10 @@ namespace DataAccess
             HashSet<int> allKeys = new HashSet<int>();
             HashSet<int> possibleDups = new HashSet<int>();
 
-            char chSeparator;
             //
             // Take a first pass and store the hash of each row's unique Key
             //
-            foreach(Row row in table.Rows)            
+            foreach (Row row in table.Rows)
             {
                 string[] parts = row.Values;
                 int hash = CalcHash(parts, ci);
@@ -145,7 +188,7 @@ namespace DataAccess
                 else
                 {
                     allKeys.Add(hash);
-                }                
+                }
             }
             allKeys = null; // Free up for GC
 
@@ -160,8 +203,8 @@ namespace DataAccess
             //using (TextWriter tw = new StreamWriter(path))
             using (var writer = new CsvWriter(path, table.ColumnNames))
             {
-                foreach(Row row in table.Rows)
-                {   
+                foreach (Row row in table.Rows)
+                {
                     {
                         string[] parts = row.Values;
                         int hash = CalcHash(parts, ci);
@@ -200,7 +243,7 @@ namespace DataAccess
             } // writer
 
 
-            DataTable d = Reader.ReadCSV(path);            
+            DataTable d = Reader.ReadCSV(path);
             DeleteLocalFile(path);
             return d;
         }
