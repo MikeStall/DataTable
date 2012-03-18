@@ -74,39 +74,28 @@ namespace DataAccess
          
         public static MutableDataTable ReadCSV(TextReader stream)
         {
+            IList<string> lines = ReadAllLines(stream);
+            return ReadArray(lines, ',', false);            
+        }
+
+        private static IList<string> ReadAllLines(TextReader stream)
+        {
             List<string> lines = new List<string>();
             while (true)
             {
                 string line = stream.ReadLine();
                 if (line == null)
                 {
-                    return ReadArray(lines, ',', false);
+                    return lines;
                 }
                 lines.Add(line);
-            }            
+            }   
         }
 
-        // For large files, just read a few rows. Useful
-        public static MutableDataTable ReadSample(TextReader stream, int size)
+        public static MutableDataTable Read(TextReader stream)
         {
-            char chSeparator = '\0';
-            // Guess separator based on header row.
-            List<string> lines = new List<string>();
-            while (true)
-            {
-                string line = stream.ReadLine();
-                if (line == null || lines.Count > size)
-                {
-                    return ReadArray(lines, chSeparator, false);
-                }
-
-                if (lines.Count == 0)
-                {
-                    chSeparator = GuessSeparateFromHeaderRow(line);
-                }
-
-                lines.Add(line);
-            } 
+            IList<string> lines = ReadAllLines(stream);
+            return ReadArray(lines, '\0', false);      
         }
 
         public static char GuessSeparateFromHeaderRow(string header)
@@ -122,19 +111,19 @@ namespace DataAccess
         // Read in a Ascii file that uses the given separate characters.
         // Like CSV. 
         // Supports quotes to escape commas
-        public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) {
+        public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) 
+        {
             var lines = File.ReadAllLines(filename);
-
-            if (separator == '\0')
-            {
-                separator = GuessSeparateFromHeaderRow(lines[0]);
-            }
-
             return ReadArray(lines, separator, fAllowMismatch);
         }
 
         private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)
         {
+            if (separator == '\0')
+            {
+                separator = GuessSeparateFromHeaderRow(lines[0]);
+            }
+
             int numRows = lines.Count - 1;
             // First row is a header
 

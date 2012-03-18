@@ -19,7 +19,7 @@ namespace DataAccess
         {
             _filename = filename;
         }
-
+        
         public override IEnumerable<string> ColumnNames
         {
             get

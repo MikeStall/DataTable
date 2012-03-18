@@ -88,7 +88,7 @@ Sarah, 40, cherries");
             };
 
             // Tests converting an array of structs into a table
-            MutableDataTable dt = Utility.ToTable(ps);
+            MutableDataTable dt = DataTable.New.FromEnumerable(ps);
 
 
             StringWriter sw = new StringWriter();

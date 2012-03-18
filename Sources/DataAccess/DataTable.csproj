@@ -43,6 +43,7 @@
     <Compile Include="Analyze.cs" />
     <Compile Include="Column.cs" />
     <Compile Include="CsvWriter.cs" />
+    <Compile Include="DataTableBuilder.cs" />
     <Compile Include="MutableDataTable.cs" />
     <Compile Include="DataTable.cs" />
     <Compile Include="Readers.cs" />

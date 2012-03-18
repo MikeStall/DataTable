@@ -15,6 +15,12 @@ namespace DataAccess
         public abstract IEnumerable<string> ColumnNames { get; }
         public abstract IEnumerable<Row> Rows { get; }
 
+        private readonly static DataTableBuilder _builder = new DataTableBuilder();
+        public static DataTableBuilder New
+        {
+            get { return _builder; }
+        }
+
         public bool HasColumnName(string name)
         {
             if (name == null)
