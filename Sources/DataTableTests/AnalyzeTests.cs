@@ -13,9 +13,10 @@ namespace DataTableTests
         // Use a small table here because any table update here will likely require a test update.
         DataTable GetTable()
         {
+            // Note irregular spacing should get parsed out
             string content =
 @"first,last,age
-Bob, Smith, 12
+Bob, Smith,  12
 Bob, Jones, 34
 Ed,  Smith, 12
 John, Smith, 34";
@@ -26,17 +27,17 @@ John, Smith, 34";
             return DataTable.New.ReadLazy(temp);
         }
                
-        DataTable GetInMemoryTable()
+        MutableDataTable GetInMemoryTable()
         {
             string content =
 @"first,last,age
 Bob, Smith, 12
 Bob, Jones, 34
-Ed,  Smith, 12
+Ed,  Smith,  12
 John, Smith, 34";
 
             TextReader tr = new StringReader(content);
-            MutableDataTable dt = Reader.ReadCSV(tr);
+            MutableDataTable dt = DataTable.New.ReadAll(tr);
             return dt;
         }
 
@@ -128,6 +129,37 @@ Ed,Smith,12
             AssertEquals(
 @"first,last,age
 ", dt3);
+
+        }
+
+        [Fact]
+        public void Join()
+        {            
+            MutableDataTable d1 = DataTable.New.ReadAll(new StringReader(
+@"first, last
+Bob, Jones
+Alfred, Smith
+Ed, Edson
+"));
+
+            MutableDataTable d2 = DataTable.New.ReadAll(new StringReader(
+@"last, country
+smith, English
+Piere, French
+Jones, American
+"));
+
+            MutableDataTable merge = Analyze.Join(d1, d2, "last");
+
+
+
+            AssertEquals(
+@"first,last,country
+Bob,JONES,American
+Alfred,SMITH,English
+Ed,EDSON,
+,PIERE,French
+", merge);
 
         }
     }

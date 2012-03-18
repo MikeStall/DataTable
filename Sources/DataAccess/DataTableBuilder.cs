@@ -25,7 +25,11 @@ namespace DataAccess
     /// </summary>
     public static class DataTableBuilderExtensions
     {
-        // Read an entire file into memory. 
+        // Read an entire CSV file into memory. 
+        public static MutableDataTable ReadCsv(this DataTableBuilder builder, string filename)
+        {
+            return ReadAll(builder, filename);
+        }
         public static MutableDataTable ReadAll(this DataTableBuilder builder, string filename)
         {
             return Reader.Read(filename);
@@ -36,6 +40,13 @@ namespace DataAccess
         {
             return Reader.Read(stream);
         }
+
+        // Copy a non-mutable into a mutable.
+        public static MutableDataTable GetMutableCopy(this DataTableBuilder builder, DataTable source)
+        {
+            return Utility.ToMutable(source);
+        }
+
                 
         /// <summary>
         /// Return an in-memory table that contains the topN rows from the table in the filename.

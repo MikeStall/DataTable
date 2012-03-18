@@ -9,7 +9,8 @@ namespace DataAccess
 {
 
     // General reader utilities. 
-    public static class Reader
+    // This is internal. Use the Builder functions to access them.
+    internal static class Reader
     {
 
         static string Intern(string value) {

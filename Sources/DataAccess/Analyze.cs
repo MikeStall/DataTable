@@ -12,6 +12,128 @@ namespace DataAccess
     /// </summary>
     public static class Analyze
     {
+        // $$$ Clarify - multiple joins (inner, outer, etc)
+        // If we have mutable in-memory, then return an in-memory.
+        public static MutableDataTable Join(MutableDataTable d1, MutableDataTable d2, string columnName)
+        {
+            Column c1 = d1.GetColumn(columnName);
+            if (c1 == null)
+            {
+                throw new InvalidOperationException("Missing column");
+            }
+            Column c2 = d2.GetColumn(columnName);
+            if (c2 == null)
+            {
+                throw new InvalidOperationException("Missing column");
+            }
+
+            // Place d1 in first set of columns, and d2 in second set.
+            int kColumn = d1.Columns.Length;
+            int kTotalColumns = kColumn + d2.Columns.Length;
+
+            // Indices into new table where join columns are.
+            int joinColumn1 = Utility.GetColumnIndexFromName(d1.ColumnNames, columnName);
+            int joinColumn2 = Utility.GetColumnIndexFromName(d2.ColumnNames, columnName) + kColumn;
+
+            // $$$ could really optimize. Sort both on column and then zip.
+            Dictionary<string, int> m1 = GetRowIndex(c1);
+            Dictionary<string, int> m2 = GetRowIndex(c2);
+
+            // $$$ column names may not be unique.
+
+            //string[] headers = d1.ColumnNames.Union(d2.ColumnNames).ToArray();
+            
+            string[] headers = new string[kTotalColumns];
+            Array.Copy(d1.ColumnNames.ToArray(), 0, headers, 0, kColumn);
+            Array.Copy(d2.ColumnNames.ToArray(), 0, headers, kColumn, kTotalColumns - kColumn);
+
+            string[] values = new string[headers.Length];
+
+            string path = GetTempFileName();
+            using (CsvWriter tw = new CsvWriter(path, headers))
+            {
+
+                foreach (var kv in m1)
+                {
+                    Clear(values);                    
+
+                    string key = kv.Key; // join column
+                    int r1 = kv.Value;
+                    int r2;
+                    if (m2.TryGetValue(key, out r2))
+                    {
+                        // In both.  write out
+                        CopyRowIntoArray(values, kColumn, d2, r2);
+    
+                        m2.Remove(key);
+                    }
+                    else
+                    {
+                        // Only in M1. 
+                    }
+
+                    CopyRowIntoArray(values, 0, d1, r1);
+                    values[joinColumn1] = values[joinColumn2] = key;
+
+                    tw.WriteRow(values);
+                }
+
+                // We remove all of M1's items from m2, so M2 is just unique items now. (possibly 0).
+                // Tag those onto the end.
+
+                foreach (var kv in m2)
+                {
+                    int r2 = kv.Value;
+                    Clear(values);
+                    CopyRowIntoArray(values, kColumn, d2, r2);
+                    values[joinColumn1] = values[joinColumn2] = kv.Key;
+
+                    tw.WriteRow(values);
+                }
+
+            } // close tw
+
+            MutableDataTable t = Reader.ReadCSV(path);
+            DeleteLocalFile(path);
+
+            // Remove duplicate columns.
+            t.RemoveColumn(joinColumn2);
+
+            return t;
+        }
+
+        static void CopyRowIntoArray(string[] values, int index, MutableDataTable d, int row)
+        {
+            for (int c = 0; c < d.Columns.Length; c++)
+            {
+                values[index] = d.Columns[c].Values[row];
+                index++;
+            }
+        }
+
+        static void Clear(string[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = string.Empty;
+            }
+        }
+
+        static Dictionary<string, int> GetRowIndex(Column c)
+        {
+            Dictionary<string, int> d = new Dictionary<string, int>();
+
+            for (int row = 0; row < c.Values.Length; row++)
+            {
+                string x = c.Values[row].ToUpperInvariant();
+
+                // If this add fails, it means the column we're doing a join on has duplicate entries.
+                d.Add(x, row); // verifies uniqueness
+            }
+            return d;
+        }
+
+
         // Return a sample that's the top N records from a table.
         // This is useful for a large table where you want to quickly get a reference
         public static MutableDataTable SampleTopN(DataTable table, int topN)

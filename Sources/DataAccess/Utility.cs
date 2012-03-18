@@ -95,6 +95,31 @@ namespace DataAccess
             return (T)System.Convert.ChangeType(s.ToUpperInvariant(), typeof(T));
         }
 
+        internal static MutableDataTable ToMutable(DataTable table)
+        {
+            MutableDataTable dt = new MutableDataTable();
+
+            // Take a pass through upfront so we know how large to allocate all the column arrays
+            int numRows = table.Rows.Count();
+
+            Column[] cs = Array.ConvertAll(table.ColumnNames.ToArray(), name => new Column(name, numRows));
+
+            int rowIdx = 0;
+            foreach (Row row in table.Rows)
+            {
+                string[] values = row.Values;
+                for (int iColumn = 0; iColumn < values.Length; iColumn++)
+                {
+                    cs[iColumn].Values[rowIdx] = values[iColumn];
+                }
+                rowIdx++;
+            }
+
+            dt.Columns = cs;
+            return dt;
+        }
+
+
 
         // Dynamically Flatten. 
         // $$$ Need way to gaurantee that flatten order matches column names.

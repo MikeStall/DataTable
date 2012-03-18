@@ -20,7 +20,7 @@ Bob, 20, apples
 Ed, 65, prunes
 Sarah, 40, cherries");
 
-            MutableDataTable dt = Reader.ReadCSV(tr);
+            MutableDataTable dt = DataTable.New.ReadAll(tr);
             return dt;
         }
 
@@ -116,6 +116,25 @@ Sarah, 40, cherries");
 4,16
 5,25
 ", dt);
+        }
+
+
+        [Fact]
+        public void ToMutable()
+        {
+            var x = from i in Enumerable.Range(1, 5) select new { N = i, NSquared = i * i };
+            DataTable dt = DataTable.New.FromEnumerable(x);
+
+            MutableDataTable dt2 = DataTable.New.GetMutableCopy(dt);
+
+            AnalyzeTests.AssertEquals(
+@"N,NSquared
+1,1
+2,4
+3,9
+4,16
+5,25
+", dt2);
         }
 
         [Fact]
