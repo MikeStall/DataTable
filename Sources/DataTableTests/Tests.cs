@@ -101,5 +101,34 @@ Sarah, 40, cherries");
 ", sw.ToString());
 
         }
+
+        [Fact]
+        public void TableFromLinqExpressionWithAnonymousType()
+        {
+            var x = from i in Enumerable.Range(1, 5) select new { N = i, NSquared = i*i };
+            var dt = DataTable.New.FromEnumerable(x);
+
+            AnalyzeTests.AssertEquals(
+@"N,NSquared
+1,1
+2,4
+3,9
+4,16
+5,25
+", dt);
+        }
+
+        [Fact]
+        public void QueryWithRowAgainstTable()
+        {
+            var x = from i in Enumerable.Range(1, 5) select new { N = i, NSquared = i * i };
+            var dt = DataTable.New.FromEnumerable(x);
+
+            // Test using the row object to lookup
+            var y = from row in dt.Rows where row["N"] == "3" select row["NSquared"];
+
+            Assert.Equal(1, y.Count());
+            Assert.Equal("9", y.First());           
+        }
     }
 }

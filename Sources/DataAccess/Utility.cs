@@ -134,14 +134,15 @@ namespace DataAccess
             return d;            
         }
 
-        static string[] Flatten<T>(T item)
+        // Exposed for testing
+        private static string[] Flatten<T>(T item)
         {
             List<string> vals = new List<string>();            
             FlattenWorker(item, vals);         
             return vals.ToArray();
         }
-
-        static void FlattenWorker(object item, List<string> vals)
+                
+        private static void FlattenWorker(object item, List<string> vals)
         {
             Type t = item.GetType();
 
@@ -170,7 +171,7 @@ namespace DataAccess
                     object value = GetMember(item, "Value");
                     FlattenWorker(value, vals);
                 }
-                return;
+                
             }
 
             // It's a class, add public properties of the class.

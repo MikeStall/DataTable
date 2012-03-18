@@ -40,7 +40,7 @@ John, Smith, 34";
             return dt;
         }
 
-        void AssertEquals(string content, MutableDataTable dt)
+        public static void AssertEquals(string content, MutableDataTable dt)
         {
             StringWriter sw = new StringWriter();
             dt.SaveToStream(sw);
