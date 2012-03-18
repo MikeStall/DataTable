@@ -55,7 +55,8 @@ namespace DataAccess
         // Only take the columns specified by the ctor. If row doesn't have a column, output blank.
         // This ensures we maintain the right schema.        
         public void WriteRow(Row r) {
-            RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw);
+            //RawWriteLine(r.Values, _tw);
+            RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw); // $$$ This is very slow, but it matches column names.
         }
 
         public void WriteRow(Row r, IDictionary<string, string> extra) {
