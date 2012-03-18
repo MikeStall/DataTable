@@ -47,6 +47,7 @@
     <Compile Include="CsvWriter.cs" />
     <Compile Include="DataTableBuilder.cs" />
     <Compile Include="EnumerableDataTable.cs" />
+    <Compile Include="TableWriter.cs" />
     <Compile Include="MutableDataTable.cs" />
     <Compile Include="DataTable.cs" />
     <Compile Include="Readers.cs" />

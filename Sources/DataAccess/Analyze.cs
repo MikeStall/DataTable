@@ -12,6 +12,25 @@ namespace DataAccess
     /// </summary>
     public static class Analyze
     {
+        // Zip down file, extract any row that matches the given selection. 
+        // Good for streaming over data.
+        public static DataTable Where(DataTable table, Func<Row, bool> fpSelector)
+        {
+            TableWriter writer = new TableWriter(table);
+
+            int count = 0;
+            foreach(Row row in table.Rows)
+            {   
+                bool keep = fpSelector(row);
+                if (keep)
+                {
+                    writer.AddRow(row);
+                    count++;
+                }                
+            }
+            return writer.CloseAndGetTable(); 
+        }
+
         // $$$ Clarify - multiple joins (inner, outer, etc)
         // If we have mutable in-memory, then return an in-memory.
         public static MutableDataTable Join(MutableDataTable d1, MutableDataTable d2, string columnName)
@@ -143,44 +162,21 @@ namespace DataAccess
                 throw new ArgumentOutOfRangeException("topN", "sample must be a positive integer");
             }
 
-            var buffer = new MemoryStream();
-            long lengthWritten;
-            using (StreamWriter output = new StreamWriter(buffer))
+            TableWriter writer = new TableWriter(table);
+
+            foreach (var row in table.Rows)
             {
-                using (var writer = new CsvWriter(output, table.ColumnNames))
+                topN--;
+                writer.AddRow(row);
+
+                if (topN == 0)
                 {
-                    if (topN > 0)
-                    {
-                        foreach (var row in table.Rows)
-                        {                            
-                            topN--;
-                            writer.WriteRow(row);
-
-                            if (topN == 0)
-                            {
-                                // Check topN before the enumeration to avoid pulling a wasted row from the source table
-                                break;
-                            }
-                        }
-                    }
-                } // dispose to flush, 
-
-                // capture after we flushed the writer (so all bytes are written) and
-                // before we dipose the MemoryStream (so the property is still readable)
-                // Need this so that we don't read a bunch of '\0' characters after the 
-                // end of the written range.
-                lengthWritten = buffer.Position; 
-            } // close output and buffer
-
-            // Previous memory stream was disposed, so create a new stream wrappover over the buffer.
-            using (var buffer2 = new MemoryStream(buffer.GetBuffer(), 0, (int) lengthWritten))
-            using (TextReader reader = new StreamReader(buffer2))
-            {
-                MutableDataTable dt = Reader.ReadCSV(reader);
-                return dt;
-            } // closed reader and buffer
-
-
+                    // Check topN before the enumeration to avoid pulling a wasted row from the source table
+                    break;
+                }
+            }
+                
+            return DataTable.New.GetMutableCopy(writer.CloseAndGetTable()); 
         }
 
         public static int[] GetColumnIndexFromNames(DataTable table, string[] columnNames)
