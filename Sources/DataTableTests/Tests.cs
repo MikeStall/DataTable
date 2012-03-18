@@ -130,5 +130,38 @@ Sarah, 40, cherries");
             Assert.Equal(1, y.Count());
             Assert.Equal("9", y.First());           
         }
+
+        // Enumerable where we should only ask for the first and then stop.
+        static IEnumerable<int> TestEnumerable()
+        {
+            yield return 1;
+            
+            // Reaching here means we didn't lazily read the enumerable.
+            Assert.True(false, "Should not have reached here");
+        }
+
+        [Fact]
+        public void LazyEnumerable()
+        {
+            //var dt = DataTable.New.FromEnumerableLazy(TestEnumerable());
+            var dt = DataTable.New.FromEnumerableLazy(TestEnumerable());
+
+            // Test using the row object to lookup
+            var y = from row in dt.Rows 
+                    let i = int.Parse(row["value"]) 
+                    select i;
+
+            // Just taking the first element should succeed since we read lazily.
+            // If we accidentally read the whole enumeration, we'd fail.
+            Assert.Equal(1, y.First());
+
+            // Verify that we can read it a second time. 
+            var sample = Analyze.SampleTopN(dt, 1);
+
+            AnalyzeTests.AssertEquals(
+@"value
+1
+", sample);
+        }
     }
 }

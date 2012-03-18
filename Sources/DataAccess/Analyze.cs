@@ -27,14 +27,19 @@ namespace DataAccess
             {
                 using (var writer = new CsvWriter(output, table.ColumnNames))
                 {
-                    foreach (var row in table.Rows)
+                    if (topN > 0)
                     {
-                        if (topN == 0)
-                        {
-                            break;
+                        foreach (var row in table.Rows)
+                        {                            
+                            topN--;
+                            writer.WriteRow(row);
+
+                            if (topN == 0)
+                            {
+                                // Check topN before the enumeration to avoid pulling a wasted row from the source table
+                                break;
+                            }
                         }
-                        topN--;
-                        writer.WriteRow(row);
                     }
                 } // dispose to flush, 
 

@@ -8,9 +8,10 @@ using System.Linq;
 
 namespace DataAccess
 {
-    // This is ROW major order, since it reads each row one at a time.
-    // This is ideal for large read-only files.
-    public class StreamingDataTable : DataTable
+    /// <summary>
+    ///  Stream rows from a file. This is ideal for large read-only files.
+    /// </summary>
+    internal class StreamingDataTable : DataTable
     {
         private readonly string _filename;
         private string[] _names;
@@ -66,33 +67,6 @@ namespace DataAccess
                 }
 
             }
-
-        }
-
-        // Representation of a row for this table.
-        private class RowFromStreamingTable : Row
-        {
-            readonly string[] _values;
-            readonly DataTable _table;
-
-            internal RowFromStreamingTable(string[] values, DataTable table)
-            {
-                _values = values;
-                _table = table;
-            }
-            public override string[] Values
-            {
-                get
-                {
-                    return _values;
-                }
-            }
-
-            public override IEnumerable<string> ColumnNames
-            {
-                get { return _table.ColumnNames; }
-            }
         }
     }
-
 }

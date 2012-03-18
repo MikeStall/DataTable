@@ -23,7 +23,7 @@ John, Smith, 34";
             string temp = Path.GetTempFileName();
             File.WriteAllText(temp, content);
 
-            return new StreamingDataTable(temp);
+            return DataTable.New.ReadLazy(temp);
         }
                
         DataTable GetInMemoryTable()

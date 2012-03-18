@@ -12,7 +12,16 @@ namespace DataAccess
     // This is primarily an IEnumerable<Row> collection.    
     public abstract class DataTable
     {
+        /// <summary>
+        /// Name of columns in the table. Columns should be case-insensitive.
+        /// If this is a mutable table, columns may be added, removed, or reordered.
+        /// </summary>
         public abstract IEnumerable<string> ColumnNames { get; }
+
+        /// <summary>
+        /// Enumeration of rows in the table.
+        /// Each row has a (possibly empty) value for each column.
+        /// </summary>
         public abstract IEnumerable<Row> Rows { get; }
 
         private readonly static DataTableBuilder _builder = new DataTableBuilder();

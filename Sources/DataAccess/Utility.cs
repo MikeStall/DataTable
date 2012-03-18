@@ -134,8 +134,27 @@ namespace DataAccess
             return d;            
         }
 
+        // Given a type, get the column names. This is the corrollay to Flatten<T>, which given an instance
+        // of the type, gets the values.
+        // This must have parallel logic to Flatten<T>.
+        internal static string[] InferColumnNames<T>()
+        {
+            Type t = typeof(T);
+            if (t.IsPrimitive || t == typeof(string))
+            {
+                // No properties to lookat.
+                return new string[1] {  "value" };
+            }
+            if (t.IsEnum || t == typeof(DateTime))
+            {
+                return new string[1] { t.Name };
+            }
+            
+            return Array.ConvertAll(typeof(T).GetProperties(), prop => prop.Name);
+        }
+
         // Exposed for testing
-        private static string[] Flatten<T>(T item)
+        internal static string[] Flatten<T>(T item)
         {
             List<string> vals = new List<string>();            
             FlattenWorker(item, vals);         
@@ -201,7 +220,7 @@ namespace DataAccess
 
 
         // $$$ Merge with the more dynamic ToTable.
-        public static MutableDataTable ToTable<T1, T2>(Tuple<T1, T2>[] a, string name1, string name2)
+        internal static MutableDataTable ToTable<T1, T2>(Tuple<T1, T2>[] a, string name1, string name2)
         {
             MutableDataTable d = new MutableDataTable();
 
@@ -227,7 +246,7 @@ namespace DataAccess
         // TKey1 is rows, TKey1 is columns.
         // Data table column names are obtained from key values.
         // Column 0 is set of row values.
-        public static MutableDataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict)
+        internal static MutableDataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict)
         {
             // TKey1 is rows, TKey2 is values.
             MutableDataTable d = new MutableDataTable();
@@ -262,7 +281,7 @@ namespace DataAccess
             return d;
         }
 
-        public static int GetColumnIndexFromName(IEnumerable<string> columnNames, string columnName)
+        internal static int GetColumnIndexFromName(IEnumerable<string> columnNames, string columnName)
         {
             int i = 0;
             foreach (string x in columnNames)
