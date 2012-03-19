@@ -130,6 +130,27 @@ namespace DataAccess
             }
         }
 
+        /// <summary>
+        /// Create a new column, and initialize the values for each row using the supplied function.
+        /// </summary>
+        /// <param name="newColumnName">Name of the new column</param>
+        /// <param name="fpComputeNewValue">function to compute the value for this cell</param>
+        public void CreateColumn(string newColumnName, Func<Row, string> fpComputeNewValue)
+        {
+            int numRows = this.NumRows;
+            Column cNew = new Column(newColumnName, numRows);
+
+            int iRow = 0;
+            foreach (Row row in this.Rows)
+            {
+                string newValue = fpComputeNewValue(row);
+                cNew.Values[iRow] = newValue;
+                iRow++;
+            }
+
+            AddColumnFirst(cNew);
+        }
+
         // Take a single column and split it into multiple.
         public void CreateColumnFromSplit<T>(Func<Row, T> fpSplit)
             where T : IColumnSet, new() {
