@@ -8,9 +8,10 @@ using System.Linq;
 
 namespace DataAccess
 {
+    // Make this private. We don't need to expose a CSV writer since users can easily just create a DataTable and save that. 
     // Helper to write a CSV file. 
     // Ensures normalized view.
-    public class CsvWriter : IDisposable {
+    internal class CsvWriter : IDisposable {
         TextWriter _tw;
         readonly string[] _ColumnNames;
 
@@ -55,8 +56,8 @@ namespace DataAccess
         // Only take the columns specified by the ctor. If row doesn't have a column, output blank.
         // This ensures we maintain the right schema.        
         public void WriteRow(Row r) {
-            //RawWriteLine(r.Values, _tw);
-            RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw); // $$$ This is very slow, but it matches column names.
+            RawWriteLine(r.Values, _tw);
+            //RawWriteLine(r.GetValuesOrEmpty(this._ColumnNames), _tw); // $$$ This is very slow, but it matches column names.
         }
 
         public void WriteRow(Row r, IDictionary<string, string> extra) {

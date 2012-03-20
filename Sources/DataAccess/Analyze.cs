@@ -12,8 +12,12 @@ namespace DataAccess
     /// </summary>
     public static class Analyze
     {
-        // Zip down file, extract any row that matches the given selection. 
-        // Good for streaming over data.
+        /// <summary>
+        /// Apply a Where filter to a table. This can stream over large data and filter it down. 
+        /// </summary>
+        /// <param name="table">source table</param>
+        /// <param name="fpSelector">predicate to execute on each row</param>
+        /// <returns>a new table that copies out rows from from the source table</returns>
         public static DataTable Where(DataTable table, Func<Row, bool> fpSelector)
         {
             TableWriter writer = new TableWriter(table);
@@ -153,8 +157,14 @@ namespace DataAccess
         }
 
 
-        // Return a sample that's the top N records from a table.
-        // This is useful for a large table where you want to quickly get a reference
+        
+        /// <summary>
+        /// Return a sample that's the top N records from a table.
+        /// This is useful to sample a large table and then save the sample. 
+        /// </summary>
+        /// <param name="table">source table</param>
+        /// <param name="topN">positive value specifying number of rows to copy from from source table</param>
+        /// <returns>The topN rows from the source table.</returns>
         public static MutableDataTable SampleTopN(DataTable table, int topN)
         {
             if (topN <= 0)
@@ -179,27 +189,40 @@ namespace DataAccess
             return DataTable.New.GetMutableCopy(writer.CloseAndGetTable()); 
         }
 
-        public static int[] GetColumnIndexFromNames(DataTable table, string[] columnNames)
+        private static int[] GetColumnIndexFromNames(DataTable table, string[] columnNames)
         {
             return Array.ConvertAll(columnNames, columnName => GetColumnIndexFromName(table, columnName));
         }
 
         // Return 0-based index of column with matching name.
         // throws an exception if not found
-        public static int GetColumnIndexFromName(DataTable table, string columnName)
+        private static int GetColumnIndexFromName(DataTable table, string columnName)
         {
             string[] columnNames = table.ColumnNames.ToArray();
             return Utility.GetColumnIndexFromName(columnNames, columnName);
         }
 
 
-        // Extract column as a histogram, sorted in descending order by frequency.
-        // Return as Tuple because it has type safety, data-table does not. 
+        
+        /// <summary>
+        /// Extract column as a histogram, sorted in descending order by frequency.        
+        /// </summary>
+        /// <param name="table">source table</param>
+        /// <param name="columnName">column within short table</param>
+        /// <returns>collection of tuples, where each tuple is a value and the count of that value within the column</returns>
         public static Tuple<string, int>[] AsHistogram(DataTable table, string columnName)
         {
             int i = GetColumnIndexFromName(table, columnName);
             return AsHistogram(table, i);
         }
+
+        /// <returns></returns>
+        /// <summary>
+        /// Extract column as a histogram, sorted in descending order by frequency.        
+        /// </summary>
+        /// <param name="table">source table</param>
+        /// <param name="columnIdx">0-based index of column </param>
+        /// <returns>collection of tuples, where each tuple is a value and the count of that value within the column</returns>
         public static Tuple<string, int>[] AsHistogram(DataTable table, int columnIdx)
         {
             Dictionary<string, int> values = new Dictionary<string, int>();
@@ -235,13 +258,19 @@ namespace DataAccess
         }
 
 
-        // Look down each column and count uniqueness.
-        // Returns a datatable of records where:
-        //  r1 = column name
-        //  r2 = # of unique elements in that column
-        // Most common occurences?
+        /// <summary>
+        /// Produces a table where each row is the number of unique values in a source column, followed by the top N occurences in that column.
+        /// </summary>
+        /// <param name="table">source table</param>
+        /// <param name="N">number of top N occurences to include in the summary table </param>
+        /// <returns>a summary table</returns>
         public static MutableDataTable GetColumnValueCounts(DataTable table, int N)
         {
+            if (N < 0)
+            {
+                throw new ArgumentOutOfRangeException("N");
+            }
+
             string[] names = table.ColumnNames.ToArray();
             int count = names.Length;
 
@@ -285,10 +314,18 @@ namespace DataAccess
             return dSummary;
         }
 
-        // Find all rows that have dups for the given columns.
-        // This uses a multi-pass algorithm to operate on a large data file.
-        public static MutableDataTable SelectDuplicates(DataTable table, params string[] columnNames)
+        
+        /// <summary>
+        /// Find all rows that have dups for the given columns.
+        /// This uses a multi-pass algorithm to operate on a large data file.
+        /// </summary>
+        /// <param name="table">original table</param>
+        /// <param name="columnNames">set of columns to compare to look for duplicates</param>
+        /// <returns>a table that's a subset of the original table</returns>
+        public static DataTable SelectDuplicates(DataTable table, params string[] columnNames)
         {
+
+
             int[] ci = GetColumnIndexFromNames(table, columnNames);
 
             // Store on hash keys first. Use hash keys because they're compact and efficient for large data sets
@@ -322,53 +359,46 @@ namespace DataAccess
 
             StringBuilder sb = new StringBuilder();
 
-            string path = GetTempFileName();
-            //using (TextWriter tw = new StreamWriter(path))
-            using (var writer = new CsvWriter(path, table.ColumnNames))
+            TableWriter writer = new TableWriter(table);            
+            
+            foreach (Row row in table.Rows)
             {
-                foreach (Row row in table.Rows)
                 {
+                    string[] parts = row.Values;
+                    int hash = CalcHash(parts, ci);
+                    if (!possibleDups.Contains(hash))
                     {
-                        string[] parts = row.Values;
-                        int hash = CalcHash(parts, ci);
-                        if (!possibleDups.Contains(hash))
-                        {
-                            continue;
-                        }
-
-                        // Potential match                    
-                        sb.Clear();
-                        foreach (int i in ci)
-                        {
-                            sb.Append(parts[i]);
-                            sb.Append(',');
-                        }
-                        string key = sb.ToString();
-
-                        if (fullMatch.ContainsKey(key))
-                        {
-                            Row firstLine = fullMatch[key];
-                            if (firstLine != null)
-                            {
-                                writer.WriteRow(firstLine.Values);
-                                fullMatch[key] = null;
-                            }
-
-                            // Real dup!
-                            writer.WriteRow(row.Values);
-                        }
-                        else
-                        {
-                            fullMatch[key] = row;
-                        }
+                        continue;
                     }
-                } // reader
-            } // writer
 
+                    // Potential match                    
+                    sb.Clear();
+                    foreach (int i in ci)
+                    {
+                        sb.Append(parts[i]);
+                        sb.Append(',');
+                    }
+                    string key = sb.ToString();
 
-            MutableDataTable d = Reader.ReadCSV(path);
-            DeleteLocalFile(path);
-            return d;
+                    if (fullMatch.ContainsKey(key))
+                    {
+                        Row firstLine = fullMatch[key];
+                        if (firstLine != null)
+                        {
+                            writer.AddRow(firstLine);
+                            fullMatch[key] = null;
+                        }
+
+                        // Real dup!
+                        writer.AddRow(row);
+                    }
+                    else
+                    {
+                        fullMatch[key] = row;
+                    }
+                }
+            } // reader
+            return writer.CloseAndGetTable();
         }
 
         // Helper for finding duplicates.

@@ -41,7 +41,7 @@ John, Smith, 34";
             return dt;
         }
 
-        public static void AssertEquals(string content, MutableDataTable dt)
+        public static void AssertEquals(string content, DataTable dt)
         {
             StringWriter sw = new StringWriter();
             dt.SaveToStream(sw);
@@ -105,7 +105,7 @@ age,2,12,2
         public void DuplicatTests(DataTable dtOriginal)
         {
             // Select first colyumn
-            MutableDataTable dt1 = Analyze.SelectDuplicates(dtOriginal, "first");
+            DataTable dt1 = Analyze.SelectDuplicates(dtOriginal, "first");
 
             AssertEquals(
 @"first,last,age
@@ -114,7 +114,7 @@ Bob,Jones,34
 ", dt1);
 
             // Select two columns
-            MutableDataTable dt2 = Analyze.SelectDuplicates(dtOriginal, "last", "age");
+            DataTable dt2 = Analyze.SelectDuplicates(dtOriginal, "last", "age");
 
             AssertEquals(
 @"first,last,age
@@ -124,7 +124,7 @@ Ed,Smith,12
 
 
             // Select two columns, empty
-            MutableDataTable dt3 = Analyze.SelectDuplicates(dtOriginal, "first", "age");
+            DataTable dt3 = Analyze.SelectDuplicates(dtOriginal, "first", "age");
 
             AssertEquals(
 @"first,last,age

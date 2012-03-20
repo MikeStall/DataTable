@@ -8,8 +8,12 @@ using System.Linq;
 
 namespace DataAccess
 {
-    // Represents a data table without loading it into memory. 
-    // This is primarily an IEnumerable<Row> collection.    
+    /// <summary>
+    /// Represents a table of data. 
+    /// This is primary an IEnumerable{Row} collection. 
+    /// The table may be just read-only streaming over the rows, which is ideal for large files of millions of rows. 
+    /// Or it may have loaded the entire table into memory, which can be ideal for mutation. 
+    /// </summary>
     public abstract class DataTable
     {
         /// <summary>
@@ -25,11 +29,21 @@ namespace DataAccess
         public abstract IEnumerable<Row> Rows { get; }
 
         private readonly static DataTableBuilder _builder = new DataTableBuilder();
+
+        /// <summary>
+        /// Provides access to extension methods for creating a table. Tables can be created in many ways, such as reading CSV files,
+        /// building around .NET objects, filtering existing tables, etc. 
+        /// </summary>
         public static DataTableBuilder New
         {
             get { return _builder; }
         }
 
+        /// <summary>
+        /// Return true if the table has the given column name. Comparison is case insensitive.
+        /// </summary>
+        /// <param name="name">name of column to look for.</param>
+        /// <returns>true iff the column is present. False if name is null.</returns>
         public bool HasColumnName(string name)
         {
             if (name == null)
@@ -44,11 +58,12 @@ namespace DataAccess
             }
             return false;
         }
-
-        // $$$ may add overload to just save a project of columns?
-
-        // Write this table out to the stream, in a CSV format.
-        // Provide an non-optimized basic version.,
+                                
+        /// <summary>
+        /// Save the table to the given stream, using a CSV format. The first line will be the headers, and then each subsequent line will be a row.
+        /// This will escape characters as needed.
+        /// </summary>
+        /// <param name="output">textwrite to write out to.</param>                
         public virtual void SaveToStream(TextWriter output)
         {
             using (var writer = new CsvWriter(output, this.ColumnNames))
@@ -60,11 +75,13 @@ namespace DataAccess
             }
         }               
 
-        // Write back out to a csv
-        // Saves both with + without warning column.
-        public void SaveCSV(string output)
+        /// <summary>
+        /// Save the table as a CSV to the given filename
+        /// </summary>
+        /// <param name="outputFilename">filename on disk to save to.</param>
+        public void SaveCSV(string outputFilename)
         {
-            using (StreamWriter sw = new StreamWriter(output))
+            using (StreamWriter sw = new StreamWriter(outputFilename))
             {
                 SaveToStream(sw);
             }
