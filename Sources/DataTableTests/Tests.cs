@@ -12,7 +12,7 @@ namespace DataTableTests
     public class Scenarios
     {
 
-        static MutableDataTable GetTable()
+        public static MutableDataTable GetTable()
         {
             TextReader tr = new StringReader(
 @"name, age,    favorite fruit
@@ -29,17 +29,13 @@ Sarah, 40, cherries");
         {
             MutableDataTable dt = GetTable();
 
-            // Whitespace has been stripped
-            Assert.True(dt.HasColumnName("name"));
-            Assert.True(dt.HasColumnName("age"));
-            Assert.True(dt.HasColumnName("AGE")); // Case insensitive
-            Assert.True(dt.HasColumnName("favorite fruit"));
-
             Assert.Equal(new string[] { "name", "age", "favorite fruit" },
                 dt.ColumnNames);
 
             Assert.Null(dt.GetColumn("missing")); // missing columns return null            
         }
+
+
 
         [Fact]
         public void GetValuesFromRows()

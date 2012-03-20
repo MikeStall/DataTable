@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalyzeTests.cs" />
+    <Compile Include="DataTableTests.cs" />
     <Compile Include="Dictionary2dTests.cs" />
     <Compile Include="FlattenTests.cs" />
     <Compile Include="ReaderTests.cs" />
