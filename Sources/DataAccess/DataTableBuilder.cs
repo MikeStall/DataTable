@@ -8,7 +8,9 @@ using System.Linq;
 
 namespace DataAccess
 {
-    // Empty class. Just exists to hang extension methods off.
+    /// <summary>
+    /// Empty class. Just exists to hang extension methods off. 
+    /// </summary>
     public class DataTableBuilder
     {
     }
@@ -25,32 +27,79 @@ namespace DataAccess
     /// </summary>
     public static class DataTableBuilderExtensions
     {
-        // Read an entire CSV file into memory. 
+        /// <summary>
+        /// Read an entire CSV file into memory.  
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="filename">filename of CSV file to load</param>
+        /// <returns>a mutable in-memory DataTable for the given CSV file</returns>
         public static MutableDataTable ReadCsv(this DataTableBuilder builder, string filename)
         {
-            return ReadAll(builder, filename);
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+            return Read(builder, filename);
         }
-        public static MutableDataTable ReadAll(this DataTableBuilder builder, string filename)
+
+        /// <summary>
+        /// Read a file into memory. 
+        /// Infer the schema from the header row. Biased to CSV, but may handle tab delimeters too. 
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="filename">filename to load</param>
+        /// <returns>a new in-memory table</returns>
+        public static MutableDataTable Read(this DataTableBuilder builder, string filename)
         {
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
             return Reader.Read(filename);
         }
 
-        // Read an entire stream into memory.
-        public static MutableDataTable ReadAll(this DataTableBuilder builder, TextReader stream)
+        /// <summary>
+        /// Read a table from the stream into memory. 
+        /// Infer the schema from the header row. Biased to CSV, but may handle tab delimeters too. 
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="stream">input stream to read from</param>
+        /// <returns>a new in-memory table</returns>
+        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream)
         {
+            if (stream == null)
+            {
+                throw new ArgumentNullException("stream");
+            }
+
             return Reader.Read(stream);
         }
 
-        // Copy a non-mutable into a mutable.
+        /// <summary>
+        /// Gets a mutable in-memory copy of the given data table.
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="source">source table that will get copied</param>
+        /// <returns>a new table</returns>
         public static MutableDataTable GetMutableCopy(this DataTableBuilder builder, DataTable source)
         {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
             return Utility.ToMutable(source);
         }
 
                 
         /// <summary>
         /// Return an in-memory table that contains the topN rows from the table in the filename.
-        /// </summary>        
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="filename">filename of table to load. Schema is inferred from header row.</param>
+        /// <param name="topN">reads the topN rows from the table.</param>
+        /// <returns>a in-memory table containing the topN rows from the supplied file.</returns>
         public static MutableDataTable ReadSampleTopN(this DataTableBuilder builder, string filename, int topN = 100)
         {
             DataTable source = new StreamingDataTable(filename);
@@ -71,9 +120,16 @@ namespace DataAccess
         }
 
         
-        /// <summary>
-        /// Create an in-memory table with 2 columns (key and value), where each row is a KeyValuePair from the dictionary. 
+        /// <summary>        
+        /// Create an in-memory table with 2 columns (key and value), where each row is a KeyValuePair from the dictionary.         
         /// </summary>
+        /// <typeparam name="TKey">TKey of dictionary</typeparam>
+        /// <typeparam name="TValue">TValue of dictionary</typeparam>
+        /// <param name="builder">ignored</param>
+        /// <param name="dict">source of data</param>
+        /// <param name="keyName">name for column that holds the dictionary keys</param>
+        /// <param name="valName">name for column that holds the dictionary values</param>
+        /// <returns>an in-memory table</returns>
         public static MutableDataTable FromDictionary<TKey, TValue>(this DataTableBuilder builder, IDictionary<TKey, TValue> dict, string keyName, string valName)
         {
             MutableDataTable d = new MutableDataTable();

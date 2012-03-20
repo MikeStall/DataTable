@@ -412,7 +412,9 @@ namespace DataAccess
             return h;
         }
 
-        // For azure, must be able to override.
+        /// <summary>
+        /// For azure usage, allow hooking the function used to create temporary files
+        /// </summary>
         public static Func<string> GetTempFileName = System.IO.Path.GetTempFileName;
 
         private static void DeleteLocalFile(string file)

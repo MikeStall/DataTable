@@ -10,7 +10,7 @@ namespace DataAccess
     // Also deal with case-insensitive strings
     // provides referential equivalence 
     // Only supports equality comparison. No ordinal comparison. Not continuous. 
-    public class DiscreteValueKind
+    internal class DiscreteValueKind
     {
         Dictionary<string, int> m_map = new Dictionary<string, int>();
         List<DiscreteValue> m_list = new List<DiscreteValue>();
@@ -77,7 +77,7 @@ namespace DataAccess
 
     // Values have referential equivalence.
     // authority it the _kind
-    public class DiscreteValue
+    internal class DiscreteValue
     {
         DiscreteValueKind _kind;
         int _index;

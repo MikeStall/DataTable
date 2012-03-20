@@ -4,20 +4,32 @@ using System.Linq;
 using System.Text;
 
 namespace DataAccess
-{
-    // 2d Dictionairy
-    // Sparse implementation. 
-    // Implementation is not intended for large sizes. Rather, we expect this to be used
-    // for summarizing information.
+{    
+    /// <summary>
+    /// 2d Dictionary, useful for spare storage. 
+    /// Implementation is not intended for large sizes. Rather, we expect this to be used for summarizing information.
+    /// </summary>
+    /// <typeparam name="TKey1">type of first key</typeparam>
+    /// <typeparam name="TKey2">type of second key</typeparam>
+    /// <typeparam name="TValue">type of value</typeparam>
     public class Dictionary2d<TKey1, TKey2, TValue>
     {
-        Dictionary<Tuple<TKey1, TKey2>, TValue> _dict = new Dictionary<Tuple<TKey1, TKey2>, TValue>();
+        private Dictionary<Tuple<TKey1, TKey2>, TValue> _dict = new Dictionary<Tuple<TKey1, TKey2>, TValue>();
 
+        /// <summary>
+        /// Count of total entries in the collection
+        /// </summary>
         public int Count
         {
             get { return _dict.Count; }
         }
 
+        /// <summary>
+        /// lookup a value. Returns a default value if not found.
+        /// </summary>
+        /// <param name="k1">first key </param>
+        /// <param name="k2">second key</param>
+        /// <returns>value stored at the given key pair.</returns>
         public TValue this[TKey1 k1, TKey2 k2]
         {
             get
@@ -32,8 +44,9 @@ namespace DataAccess
             }
         }
 
-        // Enumerate all keys
-
+        /// <summary>
+        /// Sorted enumeration of the first keyset.
+        /// </summary>
         public IEnumerable<TKey1> Key1
         {
             get
@@ -48,6 +61,10 @@ namespace DataAccess
                 return a;
             }
         }
+
+        /// <summary>
+        /// Sorted enumeration of the second keyset.
+        /// </summary>
         public IEnumerable<TKey2> Key2
         {
             get

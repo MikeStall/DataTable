@@ -15,7 +15,7 @@ namespace DataAccess
         { }
     }
 
-    public static class Utility
+    internal static class Utility
     {
         // Helper for Dictionaries. 
         public static TValue GetOrCreate<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey lookup) where TValue : new()

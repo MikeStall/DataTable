@@ -2,22 +2,37 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System;
 
 namespace DataAccess
 {
+    /// <summary>
+    /// Represents a row within a <see cref="DataTable"/>
+    /// </summary>
     public abstract class Row
     {
         // $$$ Array is bad here because it implies mutability
+
+        /// <summary>
+        /// ordered collection of values for this row.
+        /// The ordering matches the column ordering. 
+        /// </summary>
         public abstract string[] Values { get ; }
 
+        /// <summary>
+        /// Column names for the table containing this row. This is a parallel collection to <see cref="Values"/>
+        /// </summary>
         public abstract IEnumerable<string> ColumnNames { get; }
         
         // Write this single row to a CSV file
-        public void WriteCsv(TextWriter tw)
+        internal void WriteCsv(TextWriter tw)
         {
             CsvWriter.RawWriteLine(this.Values, tw);
         }
 
+        /// <summary>
+        /// Debug helper to show all values.
+        /// </summary>
         public string[] DebugValues
         {
             get
@@ -37,12 +52,20 @@ namespace DataAccess
             }
         }
 
-        // Get the value for the given column name.
-        public virtual string this[string name]
+        /// <summary>
+        /// Lookup value by column name. Throws if column name is not valid.
+        /// </summary>
+        /// <param name="columnName">column name</param>
+        /// <returns>the value in the given column</returns>    
+        public virtual string this[string columnName]
         {
             get
             {
-                int idx = GetColumnIndex(name); // $$$ throw on not found?
+                int idx = GetColumnIndex(columnName);
+                if (idx == -1)
+                {
+                    throw new ArgumentException("column is not found", columnName);
+                }
                 return Values[idx];
             }
         }
@@ -63,7 +86,12 @@ namespace DataAccess
             return -1;
         }
 
-        // Return string or empty if missing
+        
+        /// <summary>
+        /// Lookup value by column name. Returns emtpy string if column name is not valid.
+        /// </summary>
+        /// <param name="columnName">name of column</param>
+        /// <returns>value or empty string</returns>
         public string GetValueOrEmpty(string columnName)
         {
             int idx = GetColumnIndex(columnName);
@@ -74,8 +102,11 @@ namespace DataAccess
             return Values[idx];
         }
 
-        // Plural version of GetValueOrEmpty()
-        // Return order is same as input order.
+        /// <summary>
+        /// Plural version of <see cref="GetValueOrEmpty"/>
+        /// </summary>
+        /// <param name="columnName">enumeration of column names</param>
+        /// <returns>enumeration of corresponding values</returns>
         public IEnumerable<string> GetValuesOrEmpty(IEnumerable<string> columnName)
         {
             foreach (var c in columnName)

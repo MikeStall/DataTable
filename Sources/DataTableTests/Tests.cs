@@ -20,7 +20,7 @@ Bob, 20, apples
 Ed, 65, prunes
 Sarah, 40, cherries");
 
-            MutableDataTable dt = DataTable.New.ReadAll(tr);
+            MutableDataTable dt = DataTable.New.Read(tr);
             return dt;
         }
 

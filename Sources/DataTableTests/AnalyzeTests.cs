@@ -37,7 +37,7 @@ Ed,  Smith,  12
 John, Smith, 34";
 
             TextReader tr = new StringReader(content);
-            MutableDataTable dt = DataTable.New.ReadAll(tr);
+            MutableDataTable dt = DataTable.New.Read(tr);
             return dt;
         }
 
@@ -135,14 +135,14 @@ Ed,Smith,12
         [Fact]
         public void Join()
         {            
-            MutableDataTable d1 = DataTable.New.ReadAll(new StringReader(
+            MutableDataTable d1 = DataTable.New.Read(new StringReader(
 @"first, last
 Bob, Jones
 Alfred, Smith
 Ed, Edson
 "));
 
-            MutableDataTable d2 = DataTable.New.ReadAll(new StringReader(
+            MutableDataTable d2 = DataTable.New.Read(new StringReader(
 @"last, country
 smith, English
 Piere, French
