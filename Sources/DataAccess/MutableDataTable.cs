@@ -135,7 +135,8 @@ namespace DataAccess
         /// </summary>
         /// <param name="newColumnName">Name of the new column</param>
         /// <param name="fpComputeNewValue">function to compute the value for this cell</param>
-        public void CreateColumn(string newColumnName, Func<Row, string> fpComputeNewValue)
+        /// <returns>returns newly created column</returns>
+        public Column CreateColumn(string newColumnName, Func<Row, string> fpComputeNewValue)
         {
             int numRows = this.NumRows;
             Column cNew = new Column(newColumnName, numRows);
@@ -149,6 +150,8 @@ namespace DataAccess
             }
 
             AddColumnFirst(cNew);
+
+            return cNew;
         }
 
         // Take a single column and split it into multiple.
@@ -386,6 +389,7 @@ namespace DataAccess
             }
         }
 
+        // $$$ Duplicate function?
         public void CreateNewColumn(Func<Row, string> func, string newColumnName) {
             var c = new Column(newColumnName, this.NumRows);
             this.AddColumn(c);

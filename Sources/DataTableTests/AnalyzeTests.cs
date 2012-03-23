@@ -133,6 +133,43 @@ Ed,Smith,12
         }
 
         [Fact]
+        public void ShredTest()
+        {
+            DataTable dt = GetTable();
+
+            string templateFilename = Path.GetTempFileName() + ".{0}.csv";
+
+            Analyze.Shred(dt, templateFilename, "last");
+
+            string file1 = string.Format(templateFilename, "Smith");
+            string file2 = string.Format(templateFilename, "Jones");
+
+            Assert.True(File.Exists(file1));
+            Assert.True(File.Exists(file2));
+
+            string content1 = File.ReadAllText(file1);            
+            string content2 = File.ReadAllText(file2);
+
+            File.Delete(file1);
+            File.Delete(file2);
+
+            Assert.Equal(
+@"first,last,age
+Bob,Smith,12
+Ed,Smith,12
+John,Smith,34
+", content1);
+
+            
+
+            Assert.Equal(
+@"first,last,age
+Bob,Jones,34
+", content2);
+
+        }
+
+        [Fact]
         public void Join()
         {            
             MutableDataTable d1 = DataTable.New.Read(new StringReader(

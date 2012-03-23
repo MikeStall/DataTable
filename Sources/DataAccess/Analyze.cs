@@ -13,6 +13,48 @@ namespace DataAccess
     public static class Analyze
     {
         /// <summary>
+        /// Given a potentially extremely large table, shred it into smaller CSV files based on the values in columnName.
+        /// This can be very useful for easily building an index for a large file. 
+        /// For each unique value in column, a CSV file is created and named string.Format(templateFilename, value).
+        /// The ordering within each small file is preserved
+        /// </summary>
+        /// <param name="table">original table to shred</param>
+        /// <param name="templateFilename">template specifying filename of shredded files.</param>
+        /// <param name="columnName">column name to use for shredding. You can use <see cref="GetColumnValueCounts"/>
+        /// to see the variation in each column to determine a good column to use for shredding.
+        /// </param>
+        public static void Shred(DataTable table, string templateFilename, string columnName)
+        {
+            Dictionary<string, TextWriter> dict = new Dictionary<string, TextWriter>();
+
+            try
+            {
+                foreach (Row row in table.Rows)
+                {
+                    TextWriter tw;
+                    string val = row[columnName];
+                    if (!dict.TryGetValue(val, out tw))
+                    {
+                        // New value
+                        string destination = string.Format(templateFilename, val);
+                        tw = new StreamWriter(destination);
+                        dict[val] = tw;
+                        CsvWriter.RawWriteLine(table.ColumnNames, tw); // header
+                    }
+                    CsvWriter.RawWriteLine(row.Values, tw);
+                }
+
+            }
+            finally
+            {
+                foreach (var kv in dict)
+                {
+                    kv.Value.Close();
+                }
+            }
+        }
+
+        /// <summary>
         /// Apply a Where filter to a table. This can stream over large data and filter it down. 
         /// </summary>
         /// <param name="table">source table</param>

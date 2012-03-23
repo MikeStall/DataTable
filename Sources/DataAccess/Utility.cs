@@ -319,6 +319,5 @@ namespace DataAccess
             }
             throw new InvalidOperationException("No column named '" + columnName + "'");
         }
-
-    }
+    }    
 }
