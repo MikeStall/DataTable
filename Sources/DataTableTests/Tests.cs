@@ -50,7 +50,7 @@ Sarah, 40, cherries");
 
 
             Assert.Equal(new string[] { "Ed", "65", "prunes" },
-                rows[1].Values);
+                rows[1].Values.ToArray());
         }
 
         [Fact]

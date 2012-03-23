@@ -403,7 +403,7 @@ namespace DataAccess
 
         // Represent a row for this data table implementation.
         // The storage here is column-major, so the row provides a view across columns.
-        private class RowInMemory : Row
+        private class RowInMemory : Row, IList<string>
         {
             internal int m_row;
             readonly internal MutableDataTable m_parent;
@@ -417,19 +417,14 @@ namespace DataAccess
                 Debug.Assert(row >= 0 && row < m_parent.NumRows);
             }
 
-            public override string[] Values
+            /// <summary>
+            /// Mutable implementation. Setting values can change original storage, just like columns.
+            /// </summary>
+            public override IList<string> Values
             {
                 get
                 {
-                    int numColumns = m_parent.Columns.Length;
-                    string[] vals = new string[numColumns];
-
-                    for (int i = 0; i < numColumns; i++)
-                    {
-                        string value = m_parent.Columns[i].Values[m_row];
-                        vals[i] = value;
-                    }
-                    return vals;
+                    return this;
                 }
             }
             public override IEnumerable<string> ColumnNames
@@ -439,6 +434,112 @@ namespace DataAccess
                     return this.m_parent.ColumnNames;
                 }
             }
+
+
+
+            #region IList<string> Members
+
+            int IList<string>.IndexOf(string item)
+            {
+                throw new NotImplementedException();
+            }
+
+            void IList<string>.Insert(int index, string item)
+            {
+                throw new NotImplementedException();
+            }
+
+            void IList<string>.RemoveAt(int index)
+            {
+                throw new NotImplementedException();
+            }
+
+            string IList<string>.this[int index]
+            {
+                get
+                {
+                    Column c = this.m_parent.Columns[index];
+                    return c.Values[m_row];
+                }
+                set
+                {
+                    Column c = this.m_parent.Columns[index];
+                    c.Values[m_row] = value;
+                }
+            }
+
+            #endregion
+
+            #region ICollection<string> Members
+
+            void ICollection<string>.Add(string item)
+            {
+                throw new NotImplementedException();
+            }
+
+            void ICollection<string>.Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            bool ICollection<string>.Contains(string item)
+            {
+                throw new NotImplementedException();
+            }
+
+            void ICollection<string>.CopyTo(string[] array, int arrayIndex)
+            {
+                for (int i = 0; i < this.m_parent.Columns.Length; i++)
+                {
+                    Column c = this.m_parent.Columns[i];
+                    string value = c.Values[m_row];
+                    array[i + arrayIndex] = value;
+                }
+            }
+
+            int ICollection<string>.Count
+            {
+                get { return this.m_parent.Columns.Length; }
+            }
+
+            bool ICollection<string>.IsReadOnly
+            {
+                get { return false;  }
+            }
+
+            bool ICollection<string>.Remove(string item)
+            {
+                throw new NotImplementedException();
+            }
+
+            #endregion
+
+            #region IEnumerable<string> Members
+
+            IEnumerator<string> IEnumerable<string>.GetEnumerator()
+            {
+                return GetEnumeratorWorker();
+            }
+
+            IEnumerator<string> GetEnumeratorWorker()
+            {
+                for (int i = 0; i < this.m_parent.Columns.Length; i++)
+                {
+                    Column c = this.m_parent.Columns[i];
+                    yield return c.Values[m_row];
+                }
+            }
+
+            #endregion
+
+            #region IEnumerable Members
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return GetEnumeratorWorker();
+            }
+
+            #endregion
         }
     }
 }

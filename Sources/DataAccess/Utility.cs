@@ -107,8 +107,8 @@ namespace DataAccess
             int rowIdx = 0;
             foreach (Row row in table.Rows)
             {
-                string[] values = row.Values;
-                for (int iColumn = 0; iColumn < values.Length; iColumn++)
+                var values = row.Values;
+                for (int iColumn = 0; iColumn < values.Count; iColumn++)
                 {
                     cs[iColumn].Values[rowIdx] = values[iColumn];
                 }

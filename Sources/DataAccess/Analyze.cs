@@ -273,8 +273,8 @@ namespace DataAccess
             foreach (Row row in table.Rows)
             {
 
-                string[] parts = row.Values;
-                if (columnIdx >= parts.Length)
+                var parts = row.Values;
+                if (columnIdx >= parts.Count)
                 {
                     // malformed input file
                     continue;
@@ -380,7 +380,7 @@ namespace DataAccess
             //
             foreach (Row row in table.Rows)
             {
-                string[] parts = row.Values;
+                var parts = row.Values;
                 int hash = CalcHash(parts, ci);
 
                 if (allKeys.Contains(hash))
@@ -406,7 +406,7 @@ namespace DataAccess
             foreach (Row row in table.Rows)
             {
                 {
-                    string[] parts = row.Values;
+                    var parts = row.Values;
                     int hash = CalcHash(parts, ci);
                     if (!possibleDups.Contains(hash))
                     {
@@ -444,7 +444,7 @@ namespace DataAccess
         }
 
         // Helper for finding duplicates.
-        private static int CalcHash(string[] parts, int[] ci)
+        private static int CalcHash(IList<string> parts, int[] ci)
         {
             int h = 0;
             foreach (int i in ci)

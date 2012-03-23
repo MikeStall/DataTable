@@ -17,7 +17,7 @@ namespace DataAccess
         /// ordered collection of values for this row.
         /// The ordering matches the column ordering. 
         /// </summary>
-        public abstract string[] Values { get ; }
+        public abstract IList<string> Values { get ; }
 
         /// <summary>
         /// Column names for the table containing this row. This is a parallel collection to <see cref="Values"/>
