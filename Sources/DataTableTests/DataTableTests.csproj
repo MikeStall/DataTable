@@ -47,6 +47,7 @@
     <Compile Include="DataTableTests.cs" />
     <Compile Include="Dictionary2dTests.cs" />
     <Compile Include="FlattenTests.cs" />
+    <Compile Include="MutableDataTableTests.cs" />
     <Compile Include="ReaderTests.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

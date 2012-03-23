@@ -14,11 +14,12 @@ namespace DataAccess
         string GetValue(int idx);
         string Warning { get; }
     }
-
-    // Tabular data (like from a CSV file)
-    // While each row is independent, 
-    // All operations are on entire columns, including add, remove, reorder.
-    // Table is very mutable.
+        
+    /// <summary>
+    /// Mutable tabular data. Entire table is loaded in memory, and exposes both column and row access.
+    /// Table is stored in column major format, so supports efficient column operations like add, remove, and reorder.
+    /// Also exposes row enumeration. Table can be mutated through either row or column views.
+    /// </summary>
     public class MutableDataTable : DataTable {
 
         public Column[] Columns { get; set; }
@@ -40,17 +41,25 @@ namespace DataAccess
             }
 #endif
         }
-
-        // Remove all columns except for the ones listed. 
-        // Allows case insensitive matching.
-        // Also reorders to match names.
+                
+        /// <summary>
+        /// Remove all columns except for the ones listed. 
+        /// Allows case insensitive matching.
+        /// Also reorders to match names.
+        /// </summary>
+        /// <param name="names">names of columns to match</param>
         public void KeepColumns(params string[] names) {
             int len = names.Length;
             var keep = new Column[len];
             for (int i = 0; i < len; i++) {
                 string name = names[i];
                 keep[i] = GetColumn(name);
-                Utility.Assert(keep[i] != null, "No column:" + name);
+
+                if (keep[i] == null)
+                {
+                    throw new InvalidOperationException("No column named:" + name);
+                }
+                
             }
             this.Columns = keep;
 
@@ -61,8 +70,22 @@ namespace DataAccess
             }
         }
 
+        private void VerifyColumnIndex(int index)
+        {
+            if ((index < 0) || (index > this.Columns.Length))
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
+        }
+
+        /// <summary>
+        /// Remove column with the given index
+        /// </summary>
+        /// <param name="index">0-based index into column collection</param>
         public void RemoveColumn(int index)
         {
+            VerifyColumnIndex(index);
+
             List<Column> cs = new List<Column>(this.Columns);
             cs.RemoveAt(index);
             this.Columns = cs.ToArray();
@@ -74,12 +97,7 @@ namespace DataAccess
                 this.AddColumnFirst(m_warning);
             }
         }
-
-        //public void RemoveColumns(params string names) {
-
-        //}
-
-
+    
         Column m_warning = null;
         const string WarningName = "Warnings";
 
@@ -94,15 +112,19 @@ namespace DataAccess
             return m_warning;
         }
 
-        // Case-insensitive name lookup of a column.
+        /// <summary>
+        /// Case-insensitive name lookup of a column. 
+        /// </summary>
+        /// <param name="name">name of column to look for</param>
+        /// <returns>null if column is not found</returns>
         public Column GetColumn(string name) {
             foreach (var c in this.Columns) {
                 if (string.Compare(c.Name, name, true) == 0) {
                     return c;
                 }
             }
+
             // Column not found
-            // $$$ 
             return null;
         }
 
@@ -257,6 +279,9 @@ namespace DataAccess
             c.Name = newName;
         }
 
+        /// <summary>
+        /// Return total number of rows in the table. 
+        /// </summary>
         public int NumRows {
             get {
                 return this.Columns[0].Values.Length;
@@ -280,9 +305,12 @@ namespace DataAccess
                 }
             }
         }
-
-        // Get a specific row by row-index. This works for in-memory, but
-        // can't be done on streaming. 
+                
+        /// <summary>
+        /// Get a specific row by row-index. 
+        /// </summary>
+        /// <param name="rowIndex">0-based index of row to lookup</param>
+        /// <returns>row at the given index</returns>
         public Row GetRow(int rowIndex)
         {
             return new RowInMemory(this, rowIndex);
@@ -341,7 +369,10 @@ namespace DataAccess
             }
         }
 
-        // Remove columns with given names
+        /// <summary>
+        /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
+        /// </summary>
+        /// <param name="names">names of rows to delete</param>
         public void DeleteColumns(params string[] names) {            
             // add a warning if not empty
             foreach (var name in names) {

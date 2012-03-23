@@ -8,11 +8,10 @@ namespace DataAccess
 {
     /// <summary>
     /// Represents a row within a <see cref="DataTable"/>
+    /// The Row may or may not be mutable, depending on whether the table is mutable.
     /// </summary>
     public abstract class Row
     {
-        // $$$ Array is bad here because it implies mutability
-
         /// <summary>
         /// ordered collection of values for this row.
         /// The ordering matches the column ordering. 
@@ -67,6 +66,15 @@ namespace DataAccess
                     throw new ArgumentException("column is not found", columnName);
                 }
                 return Values[idx];
+            }
+            set
+            {
+                int idx = GetColumnIndex(columnName);
+                if (idx == -1)
+                {
+                    throw new ArgumentException("column is not found", columnName);
+                }
+                Values[idx] = value; // this will check mutability.
             }
         }
 
