@@ -11,19 +11,20 @@ namespace DataAccess
     /// These handle large tables.
     /// </summary>
     public static class Analyze
-    {
+    {  
         /// <summary>
         /// Given a potentially extremely large table, shred it into smaller CSV files based on the values in columnName.
         /// This can be very useful for easily building an index for a large file. 
-        /// For each unique value in column, a CSV file is created and named string.Format(templateFilename, value).
+        /// For each unique value in column, funcCreateStream is invoked with that value to get a TextWriter. The csv is written to that writer.
         /// The ordering within each small file is preserved
+        /// This stream based overload is useful when you need to avoid writing to the local file system (such as with Azure storage)
         /// </summary>
         /// <param name="table">original table to shred</param>
-        /// <param name="templateFilename">template specifying filename of shredded files.</param>
+        /// <param name="funcCreateStream">callback function to create a stream for each new table.</param>
         /// <param name="columnName">column name to use for shredding. You can use <see cref="GetColumnValueCounts"/>
         /// to see the variation in each column to determine a good column to use for shredding.
-        /// </param>
-        public static void Shred(DataTable table, string templateFilename, string columnName)
+        /// </param>    
+        public static void Shred(DataTable table, string columnName, Func<string, TextWriter> funcCreateStream)
         {
             Dictionary<string, TextWriter> dict = new Dictionary<string, TextWriter>();
 
@@ -36,8 +37,7 @@ namespace DataAccess
                     if (!dict.TryGetValue(val, out tw))
                     {
                         // New value
-                        string destination = string.Format(templateFilename, val);
-                        tw = new StreamWriter(destination);
+                        tw = funcCreateStream(val);                        
                         dict[val] = tw;
                         CsvWriter.RawWriteLine(table.ColumnNames, tw); // header
                     }
@@ -53,6 +53,31 @@ namespace DataAccess
                 }
             }
         }
+
+        /// <summary>
+        /// Given a potentially extremely large table, shred it into smaller CSV files based on the values in columnName.
+        /// This can be very useful for easily building an index for a large file. 
+        /// For each unique value in column, a CSV file is created and named string.Format(templateFilename, value).
+        /// The ordering within each small file is preserved
+        /// </summary>
+        /// <param name="table">original table to shred</param>
+        /// <param name="columnName">column name to use for shredding. You can use <see cref="GetColumnValueCounts"/>
+        /// to see the variation in each column to determine a good column to use for shredding.
+        /// </param>
+        /// <param name="templateFilename">template specifying filename of shredded files.</param>
+        public static void Shred(DataTable table, string columnName, string templateFilename)
+        {
+            Func<string, TextWriter> func =
+                (value) =>
+                {
+                    string destination = string.Format(templateFilename, value);
+                    TextWriter tw = new StreamWriter(destination);
+                    return tw;
+                };
+            Shred(table, columnName, func);
+        }
+
+
 
         /// <summary>
         /// Apply a Where filter to a table. This can stream over large data and filter it down. 

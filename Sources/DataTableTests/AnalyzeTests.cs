@@ -139,7 +139,7 @@ Ed,Smith,12
 
             string templateFilename = Path.GetTempFileName() + ".{0}.csv";
 
-            Analyze.Shred(dt, templateFilename, "last");
+            Analyze.Shred(dt, "last", templateFilename);
 
             string file1 = string.Format(templateFilename, "Smith");
             string file2 = string.Format(templateFilename, "Jones");
