@@ -8,9 +8,13 @@ using System.Reflection;
 
 namespace DataAccess
 {
+    /// <summary>
+    /// Exception thrown on illegal user operation.
+    /// </summary>
+    [Serializable]
     public class AssertException : Exception
     {
-        public AssertException(string message)
+        internal AssertException(string message)
             : base(message)
         { }
     }

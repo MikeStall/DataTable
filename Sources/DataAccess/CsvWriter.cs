@@ -5,6 +5,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DataAccess
 {
@@ -28,6 +29,7 @@ namespace DataAccess
         }
 
         // Will overwrite
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "setting _ownsStream flag means caller will dispose")]
         public CsvWriter(string outputFilename, IEnumerable<string> columnNames) 
             : this(CreateWriterForFile(outputFilename), columnNames)
         {

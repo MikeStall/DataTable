@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DataAccess
 {
@@ -492,8 +493,10 @@ namespace DataAccess
         /// <summary>
         /// For azure usage, allow hooking the function used to create temporary files
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2211:NonConstantFieldsShouldNotBeVisible")]
         public static Func<string> GetTempFileName = System.IO.Path.GetTempFileName;
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void DeleteLocalFile(string file)
         {
             try
