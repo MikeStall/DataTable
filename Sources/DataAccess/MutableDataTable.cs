@@ -48,12 +48,6 @@ namespace DataAccess
                 
             }
             this.Columns = keep;
-
-            // Always keep the warning column.
-            // This assumes warning was not in the original name list
-            if (m_warning != null) {
-                this.AddColumnFirst(m_warning);
-            }
         }
 
         private void VerifyColumnIndex(int index)
@@ -75,27 +69,6 @@ namespace DataAccess
             List<Column> cs = new List<Column>(this.Columns);
             cs.RemoveAt(index);
             this.Columns = cs.ToArray();
-
-            // Always keep the warning column.
-            // This assumes warning was not in the original name list
-            if (m_warning != null)
-            {
-                this.AddColumnFirst(m_warning);
-            }
-        }
-    
-        Column m_warning = null;
-        const string WarningName = "Warnings";
-
-        // $$$
-        // For warnings, have a special column.
-        // Technically a normal column, so normal operations work on it (like save)
-        private Column GetWarningColumn() {
-            if (m_warning == null) {
-                m_warning = new Column(WarningName, this.NumRows);
-                this.AddColumnFirst(m_warning); // for cosmetic purposes, add to leftmost
-            }
-            return m_warning;
         }
 
         /// <summary>
@@ -186,25 +159,10 @@ namespace DataAccess
 
                 var result = fpSplit(row);
 
-                if (result.Warning != null) {
-                    AppendWarning(r, result.Warning);
-                }
-
                 // Place results into new columns
                 for (int i = 0; i < fields.Length; i++) {
                     newColumns[i].Values[r] = result.GetValue(i);
                 }
-            }
-        }
-
-        // Append a warning to the row in the warning column.
-        // Be sure to append since we can have multiple warnings in a row.
-        public void AppendWarning(int row, string message) {
-            var values = this.GetWarningColumn().Values;
-            if (string.IsNullOrEmpty(values[row])) {
-                values[row] = message;
-            } else {
-                values[row] = values[row] + ";" + message;
             }
         }
 
@@ -294,15 +252,6 @@ namespace DataAccess
             }
         }
 
-        // Get all columns except the warning column
-        static IEnumerable<Column> NoWarning(IEnumerable<Column> columns) {
-            foreach (var c in columns) {
-                if (c.Name == WarningName)
-                    continue;
-                yield return c;
-            }
-        }
-
         /// <summary>
         /// Enumerate the rows in the table. The rows provide mutable access to the underlying storage
         /// </summary>
@@ -374,29 +323,11 @@ namespace DataAccess
 
         }
 
-        void WarnIfNotEmpty(string name) {
-            var c = this.GetColumn(name);
-            for(int row = 0; row < c.Values.Length; row++){
-                string v = c.Values[row];
-                if (!string.IsNullOrEmpty(v)) {
-                    this.GetWarningColumn();
-                    this.AppendWarning(row, string.Format("Column '{0}' had value '{1}'.", name, v));
-                }
-            }
-        }
-
         /// <summary>
         /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
         /// </summary>
         /// <param name="names">names of rows to delete</param>
         public void DeleteColumns(params string[] names) {            
-            // add a warning if not empty
-#if false
-            foreach (var name in names) {
-                WarnIfNotEmpty(name);
-            }
-#endif
-
             int numColumnsOld = this.Columns.Length;
 
             int idxNew = 0;            
