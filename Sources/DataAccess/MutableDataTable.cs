@@ -59,19 +59,6 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Remove column with the given index
-        /// </summary>
-        /// <param name="index">0-based index into column collection</param>
-        public void RemoveColumn(int index)
-        {
-            VerifyColumnIndex(index);
-
-            List<Column> cs = new List<Column>(this.Columns);
-            cs.RemoveAt(index);
-            this.Columns = cs.ToArray();
-        }
-
-        /// <summary>
         /// Case-insensitive name lookup of a column. 
         /// </summary>
         /// <param name="name">name of column to look for</param>
@@ -113,7 +100,7 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Create a new column, and initialize the values for each row using the supplied function.
+        /// Create a new column at the end of the table, and initialize the values for each row using the supplied function.
         /// </summary>
         /// <param name="newColumnName">Name of the new column</param>
         /// <param name="fpComputeNewValue">function to compute the value for this cell</param>
@@ -131,7 +118,7 @@ namespace DataAccess
                 iRow++;
             }
 
-            AddColumnFirst(cNew);
+            AddColumnLast(cNew);
 
             return cNew;
         }
@@ -148,7 +135,7 @@ namespace DataAccess
             Column[] newColumns = new Column[fields.Length];
             for (int i = 0; i < fields.Length; i++) {
                 newColumns[i] = new Column(fields[i], this.NumRows);
-                this.AddColumn(newColumns[i]);
+                this.AddColumnLast(newColumns[i]);
             }
 
 
@@ -193,31 +180,11 @@ namespace DataAccess
                 c.Values[i] = sb.ToString();
             }
 
-            AddColumn(c);
+            AddColumnLast(c);
 
             return c;
         }
         
-        // Add a column on the leftmost posiiton
-        void AddColumnFirst(Column c) {
-            Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
-            int len = this.Columns.Length;
-            var x = new Column[len + 1];
-            x[0] = c;
-            Array.Copy(this.Columns, 0, x, 1, len);
-            this.Columns = x;
-        }
-        
-        // Append a column at the end. 
-        void AddColumn(Column c) {
-            Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
-            int len = this.Columns.Length;
-            var x = new Column[len + 1];
-            x[len] = c;
-            Array.Copy(this.Columns, x, len);
-            this.Columns = x;
-        }
-
         /// <summary>
         /// rename a column from an old name to the new name 
         /// </summary>
@@ -324,6 +291,19 @@ namespace DataAccess
         }
 
         /// <summary>
+        /// Remove column with the given index
+        /// </summary>
+        /// <param name="index">0-based index into column collection</param>
+        public void DeleteColumn(int index)
+        {
+            VerifyColumnIndex(index);
+
+            List<Column> cs = new List<Column>(this.Columns);
+            cs.RemoveAt(index);
+            this.Columns = cs.ToArray();
+        }
+
+        /// <summary>
         /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
         /// </summary>
         /// <param name="names">names of rows to delete</param>
@@ -355,11 +335,16 @@ namespace DataAccess
 
             this.Columns = newColumns;
         }
-
-        // Apply a given function to every entry in a column
-        // This transforms the column in place.
-        public void ApplyToColumn(string name, Func<string, string> func) {
-            var c = this.GetColumn(name);
+                
+        /// <summary>
+        /// Apply a given function to every entry in a column
+        /// This transforms the column in place.
+        /// </summary>
+        /// <param name="name">column name to apply to</param>
+        /// <param name="func">function called once for each column value, replaces each cell in the column</param>
+        public void ApplyToColumn(string name, Func<string, string> func) 
+        {
+            Column c = this.GetColumn(name);
             Utility.Assert(c != null);
 
             for (int i = 0; i < c.Values.Length; i++) {
@@ -369,16 +354,26 @@ namespace DataAccess
             }
         }
 
-        // $$$ Duplicate function?
-        public void CreateNewColumn(Func<Row, string> func, string newColumnName) {
-            var c = new Column(newColumnName, this.NumRows);
-            this.AddColumn(c);
-                        
-            for (int r = 0; r < c.Values.Length; r++) {
-                Row row = new RowInMemory(this, r);
-                var newValue = func(row);
-                c.Values[r] = newValue;
-            }
+        // Add a column on the leftmost posiiton
+        private void AddColumnFirst(Column c)
+        {
+            Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
+            int len = this.Columns.Length;
+            var x = new Column[len + 1];
+            x[0] = c;
+            Array.Copy(this.Columns, 0, x, 1, len);
+            this.Columns = x;
+        }
+
+        // Append a column at the end. 
+        private void AddColumnLast(Column c)
+        {
+            Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
+            int len = this.Columns.Length;
+            var x = new Column[len + 1];
+            x[len] = c;
+            Array.Copy(this.Columns, x, len);
+            this.Columns = x;
         }
 
         // Represent a row for this data table implementation.

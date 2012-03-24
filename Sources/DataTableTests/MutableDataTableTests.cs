@@ -127,7 +127,7 @@ Fred,Jones
         public void RemoveColumns()
         {
             MutableDataTable dt = GetTable();
-            dt.RemoveColumn(1);
+            dt.DeleteColumn(1);
 
             AnalyzeTests.AssertEquals(
 @"first
@@ -142,8 +142,8 @@ Fred
             MutableDataTable dt = GetTable();
 
             Assert.Equal(2, dt.Columns.Length); // initial value
-            Assert.Throws<ArgumentOutOfRangeException>(()=> { dt.RemoveColumn(-1); });
-            Assert.Throws<ArgumentOutOfRangeException>(()=> { dt.RemoveColumn(5); });
+            Assert.Throws<ArgumentOutOfRangeException>(()=> { dt.DeleteColumn(-1); });
+            Assert.Throws<ArgumentOutOfRangeException>(()=> { dt.DeleteColumn(5); });
             Assert.Equal(2, dt.Columns.Length); // no change
         }
 
@@ -169,6 +169,20 @@ Fred
             Assert.Equal(2, cs.Length);
             Assert.Equal("last", cs[0].Name);
             Assert.Equal("first", cs[1].Name);            
+        }
+
+        [Fact]
+        public void CreateColumn()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.CreateColumn("fullname", row => row["first"] + "_" + row["last"]);
+
+            AnalyzeTests.AssertEquals(
+@"first,last,fullname
+Bob,Smith,Bob_Smith
+Fred,Jones,Fred_Jones
+", dt);
         }
 
         [Fact]
@@ -202,6 +216,20 @@ Fred,Jones
         }
 
         [Fact]
+        public void RenameSame()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.RenameColumn("first", "first");
+
+            AnalyzeTests.AssertEquals(
+@"first,last
+Bob,Smith
+Fred,Jones
+", dt);
+        }
+
+        [Fact]
         public void RenameBadOldName()
         {
             MutableDataTable dt = GetTable();
@@ -229,6 +257,21 @@ Fred,Jones
             Column c = dt.GetColumn("missing");
             Assert.Null(c);
         }
+
+        [Fact]
+        public void ApplyToColumn()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.ApplyToColumn("first", value => value.ToUpper());
+
+            AnalyzeTests.AssertEquals(
+@"first,last
+BOB,Smith
+FRED,Jones
+", dt);
+        }
+
 
         [Fact]
         public void AssertType()

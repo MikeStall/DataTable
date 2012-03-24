@@ -197,7 +197,7 @@ namespace DataAccess
             DeleteLocalFile(path);
 
             // Remove duplicate columns.
-            t.RemoveColumn(joinColumn2);
+            t.DeleteColumn(joinColumn2);
 
             return t;
         }
