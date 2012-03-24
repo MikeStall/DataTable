@@ -103,7 +103,17 @@ namespace DataAccess
         }
 
         // $$$ Clarify - multiple joins (inner, outer, etc)
-        // If we have mutable in-memory, then return an in-memory.
+        
+        /// <summary>
+        /// Performs a full outer join on two in-memory tables and returns a new table.
+        /// The number of rows in the resulting table is the sum of rows from each source table.
+        /// The number of columns in teh new table is the sum of columns in the the source tables minus 1 
+        /// (since the join column is redundant)
+        /// </summary>
+        /// <param name="d1"></param>
+        /// <param name="d2"></param>
+        /// <param name="columnName">column name to join on. Both tables must have this column name.</param>
+        /// <returns>a new table</returns>
         public static MutableDataTable Join(MutableDataTable d1, MutableDataTable d2, string columnName)
         {
             Column c1 = d1.GetColumn(columnName);

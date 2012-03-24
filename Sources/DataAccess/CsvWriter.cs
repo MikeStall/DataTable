@@ -65,6 +65,7 @@ namespace DataAccess
         }
         IEnumerable<string> ValueHelper(Row r, IDictionary<string, string> extra) {
             foreach (var name in _ColumnNames) {
+                //if (Utility.GetColumnIndexFromName(r.ColumnNames, name) // throws
                 //if (r.m_parent.HasColumnName(name)) 
                 if (true) // $$$ fix
                 {
