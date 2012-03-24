@@ -171,8 +171,6 @@ namespace DataAccess
             data.Columns = columns;
 
 
-            data.DebugPrintRow();
-
             return data;
         }
     }

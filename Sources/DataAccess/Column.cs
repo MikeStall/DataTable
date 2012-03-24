@@ -27,6 +27,10 @@ namespace DataAccess {
             this.Values = new string[numRows];
         }
 
+        /// <summary>
+        /// Provide summary string representation for this column
+        /// </summary>
+        /// <returns></returns>
         public override string ToString() {
             int count = 0;
             if (this.Values != null) {

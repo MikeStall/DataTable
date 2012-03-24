@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace DataAccess
 {
     // Cheaper than reflection. Could be removed and we could get the information declaratively.
-    public interface IColumnSet
+    internal interface IColumnSet
     {
         string[] GetFields();
         string GetValue(int idx);
@@ -22,26 +22,12 @@ namespace DataAccess
     /// </summary>
     public class MutableDataTable : DataTable {
 
+        /// <summary>
+        /// Return the set of columnns in this mutable table. 
+        /// Column represent the direct storage and are mutable.
+        /// </summary>
         public Column[] Columns { get; set; }
-
-        // Helper to print a single row. 
-        // Useful to see example of each type of data. 
-        public void DebugPrintRow() {
-            // May disable because it's very verbose
-#if VERBOSE
-            int row = 0;
-            Console.WriteLine("---------------");
-            foreach (var c in this.Columns) {
-                var oldColor = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Write("{0}:", c.Name);
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("{0}", c.Values[row]);
-                Console.ForegroundColor = oldColor;
-            }
-#endif
-        }
-                
+               
         /// <summary>
         /// Remove all columns except for the ones listed. 
         /// Allows case insensitive matching.
@@ -104,7 +90,7 @@ namespace DataAccess
         // $$$
         // For warnings, have a special column.
         // Technically a normal column, so normal operations work on it (like save)
-        public Column GetWarningColumn() {
+        private Column GetWarningColumn() {
             if (m_warning == null) {
                 m_warning = new Column(WarningName, this.NumRows);
                 this.AddColumnFirst(m_warning); // for cosmetic purposes, add to leftmost
@@ -128,7 +114,11 @@ namespace DataAccess
             return null;
         }
 
-        // Retrieve multiple columns matching the given names
+        /// <summary>
+        /// Retrieve multiple columns matching the given names 
+        /// </summary>
+        /// <param name="names">column names to lookup</param>
+        /// <returns>columns correpsonding to provided names</returns>
         public Column[] GetColumns(params string[] names) {
             int len = names.Length;
             var c = new Column[len];
@@ -138,17 +128,14 @@ namespace DataAccess
             return c;
         }
 
+        /// <summary>
+        /// Get the names of the columns, in the order they appear.
+        /// </summary>
         public override IEnumerable<string> ColumnNames {
             get {
                 foreach (var c in this.Columns) {
                     yield return c.Name;
                 }
-            }
-        }
-
-        static public IEnumerable<string> GetColumnNames(IEnumerable<Column> columns) {
-            foreach (var c in columns) {
-                yield return c.Name;
             }
         }
 
@@ -177,7 +164,7 @@ namespace DataAccess
         }
 
         // Take a single column and split it into multiple.
-        public void CreateColumnFromSplit<T>(Func<Row, T> fpSplit)
+        internal void CreateColumnFromSplit<T>(Func<Row, T> fpSplit)
             where T : IColumnSet, new() {
 
             T dummy = new T();
@@ -221,10 +208,16 @@ namespace DataAccess
             }
         }
 
-        // Merge each column into a new column. Use space as join character.
-        public void CreateColumnFromMerging(string newName, params string[] old) {
+        /// <summary>
+        /// Merge each column into a new column. Use space as join character. 
+        /// This adds a new column. The existing columns are not removed.
+        /// </summary>
+        /// <param name="newName">name of the new column</param>
+        /// <param name="columnNamesToMerge">names of columns to merge. </param>
+        /// <returns>the newly created column </returns>
+        public Column CreateColumnFromMerging(string newName, params string[] columnNamesToMerge) {
 
-            var parts = GetColumns(old);
+            var parts = GetColumns(columnNamesToMerge);
             int rows = this.NumRows;
             var c = new Column(newName, rows);
 
@@ -243,6 +236,8 @@ namespace DataAccess
             }
 
             AddColumn(c);
+
+            return c;
         }
         
         // Add a column on the leftmost posiiton
@@ -254,7 +249,8 @@ namespace DataAccess
             Array.Copy(this.Columns, 0, x, 1, len);
             this.Columns = x;
         }
-
+        
+        // Append a column at the end. 
         void AddColumn(Column c) {
             Utility.Assert(!HasColumnName(c.Name), "Already has a column '" + c.Name + "'");
             int len = this.Columns.Length;
@@ -264,16 +260,26 @@ namespace DataAccess
             this.Columns = x;
         }
 
-        // rename a column from an old name to the new name
+        /// <summary>
+        /// rename a column from an old name to the new name 
+        /// </summary>
+        /// <param name="oldName">existing column in the table</param>
+        /// <param name="newName">new name for the column. Must be a unique name</param>
         public void RenameColumn(string oldName, string newName) {
-            Utility.Assert(HasColumnName(oldName), "Can't rename column '" + oldName + "' because it doesn't exist.");
+            if (!HasColumnName(oldName))
+            {
+                throw new InvalidOperationException("Can't rename column '" + oldName + "' because it doesn't exist.");
+            }
 
             if (Utility.Compare(oldName, newName))
             {
                 return;
             }
 
-            Utility.Assert(!HasColumnName(newName), "Can't rename column to '" + newName + "' because there's an existing column with that name.");
+            if (HasColumnName(newName))
+            {
+                throw new InvalidOperationException("Can't rename column to '" + newName + "' because there's an existing column with that name.");
+            }
 
             var c = GetColumn(oldName);
             c.Name = newName;
@@ -297,6 +303,9 @@ namespace DataAccess
             }
         }
 
+        /// <summary>
+        /// Enumerate the rows in the table. The rows provide mutable access to the underlying storage
+        /// </summary>
         public override IEnumerable<Row> Rows {
             get {
                 int rows = this.NumRows;
@@ -316,8 +325,15 @@ namespace DataAccess
             return new RowInMemory(this, rowIndex);
         }
 
-        // Only keep rows where the predicate returns true
+        /// <summary>
+        /// Only keep rows where the predicate returns true
+        /// </summary>
+        /// <param name="predicate">predicate to execute on each row</param>
         public void KeepRows(Func<Row, bool> predicate) {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException("predicate");
+            }
             // Want to avoid multiple memory allocations
 
             List<int> index = new List<int>();
@@ -375,9 +391,11 @@ namespace DataAccess
         /// <param name="names">names of rows to delete</param>
         public void DeleteColumns(params string[] names) {            
             // add a warning if not empty
+#if false
             foreach (var name in names) {
                 WarnIfNotEmpty(name);
             }
+#endif
 
             int numColumnsOld = this.Columns.Length;
 

@@ -44,6 +44,28 @@ Fred, Jones";
         }
 
         [Fact]
+        public void DeleteColumnsEmptyArray()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.DeleteColumns();
+        }
+
+        [Fact]
+        public void DeleteColumns()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.DeleteColumns("first");
+
+            AnalyzeTests.AssertEquals(
+@"last
+Smith
+Jones
+", dt);
+        }
+
+        [Fact]
         public void KeepColumnsReorder()
         {
             MutableDataTable dt = GetTable();
@@ -69,6 +91,27 @@ Jones,Fred
 Smith
 Jones
 ", dt);
+        }
+
+        [Fact]
+        public void KeepRows()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.KeepRows(row => row["last"] == "Jones");
+            
+            AnalyzeTests.AssertEquals(
+@"first,last
+Fred,Jones
+", dt);
+        }
+
+        [Fact]
+        public void KeepRowsThrowsOnNull()
+        {
+            MutableDataTable dt = GetTable();
+
+            Assert.Throws<ArgumentNullException>(() => dt.KeepRows(null));
         }
 
         [Fact]
@@ -115,6 +158,68 @@ Fred
             Assert.Equal("first", c.Name);
             Assert.Equal(new string[] { "Bob", "Fred" }, c.Values);
         }
+
+        [Fact]
+        public void GetColumns()
+        {
+            MutableDataTable dt = GetTable();
+
+            Column[] cs = dt.GetColumns("last", "first");
+
+            Assert.Equal(2, cs.Length);
+            Assert.Equal("last", cs[0].Name);
+            Assert.Equal("first", cs[1].Name);            
+        }
+
+        [Fact]
+        public void CreateColumnFromMerging()
+        {
+            MutableDataTable dt = GetTable();
+
+            Column c = dt.CreateColumnFromMerging("fullname", "first", "last");
+
+            Assert.Equal("fullname", c.Name);
+
+            AnalyzeTests.AssertEquals(
+@"first,last,fullname
+Bob,Smith,Bob Smith
+Fred,Jones,Fred Jones
+", dt);
+        }
+
+        [Fact]
+        public void Rename()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.RenameColumn("first", "FName");
+
+            AnalyzeTests.AssertEquals(
+@"FName,last
+Bob,Smith
+Fred,Jones
+", dt);
+        }
+
+        [Fact]
+        public void RenameBadOldName()
+        {
+            MutableDataTable dt = GetTable();
+
+            // Fail when old name does not exist
+            Assert.Throws<InvalidOperationException>(() => dt.RenameColumn("illegal", "FName"));
+        }
+
+        [Fact]
+        public void RenameBadNewName()
+        {
+            MutableDataTable dt = GetTable();
+
+            // Fail when new name already exists.
+            Assert.Throws<InvalidOperationException>(() => dt.RenameColumn("first", "last"));
+        }
+
+
 
         [Fact]
         public void GetMissingColumnIsNull()
