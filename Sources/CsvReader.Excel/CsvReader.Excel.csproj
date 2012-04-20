@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4798F7BD-7613-42C2-B35B-A208E65E51B8}</ProjectGuid>
+    <ProjectGuid>{9E8BD069-18F3-45E4-B64A-B10B7CC10807}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DataAccess</RootNamespace>
-    <AssemblyName>CsvReader</AssemblyName>
+    <RootNamespace>CsvReader.Excel</RootNamespace>
+    <AssemblyName>CsvReader.Excel</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -21,8 +21,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\CsvReader.xml</DocumentationFile>
-    <CodeAnalysisRuleSet>BasicDesignGuidelineRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,32 +29,23 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\CsvReader.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DocumentFormat.OpenXml, Version=2.0.5022.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analyze.cs" />
-    <Compile Include="Column.cs" />
-    <Compile Include="CsvWriter.cs" />
-    <Compile Include="DataTableBuilder.cs" />
-    <Compile Include="EnumerableDataTable.cs" />
-    <Compile Include="TableWriter.cs" />
-    <Compile Include="MutableDataTable.cs" />
-    <Compile Include="DataTable.cs" />
-    <Compile Include="Readers.cs" />
-    <Compile Include="Row.cs" />
-    <Compile Include="Dictionary2d.cs" />
-    <Compile Include="DiscreteValue.cs" />
+    <Compile Include="Class1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RowFromStreamingTable.cs" />
-    <Compile Include="StreamingDataTable.cs" />
-    <Compile Include="Utility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataAccess\DataTable.csproj">
+      <Project>{4798F7BD-7613-42C2-B35B-A208E65E51B8}</Project>
+      <Name>DataTable</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
