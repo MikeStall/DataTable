@@ -141,7 +141,7 @@ namespace DataAccess
         }
 
         // skip access
-        internal static MutableDataTable ToTable<TValue>(Dictionary2d<int, int, TValue> dict)
+        private static MutableDataTable ToTable<TValue>(Dictionary2d<int, int, TValue> dict)
         {
             // TKey1 is rows, TKey2 is values.
             MutableDataTable d = new MutableDataTable();
@@ -241,7 +241,7 @@ namespace DataAccess
         // Parse ref to loc, 
         // Returns 0-based values (column, row)
         // "B3" --> (), "AA32" --> (1+26
-        static Tuple<int, int> ParseRef(string loc)
+        private static Tuple<int, int> ParseRef(string loc)
         {
             int column = 0;
 
@@ -268,7 +268,7 @@ namespace DataAccess
             throw new InvalidOperationException("illegal location value:" + loc);
         }
 
-        static int ConvertLetter(char ch)
+        private static int ConvertLetter(char ch)
         {
             if (ch >= 'A' && ch <= 'Z')
             {
