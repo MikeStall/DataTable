@@ -44,5 +44,14 @@ namespace DataTableTests
             Assert.False(dt.HasColumnName("boo")); // missing
             Assert.False(dt.HasColumnName(null));
         }
+
+        [Fact]
+        public void SetName()
+        {
+            MutableDataTable dt = new MutableDataTable();
+            dt.Name = "test";
+
+            Assert.Equal("test", dt.Name);
+        }
     }
 }
