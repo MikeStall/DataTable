@@ -4,19 +4,47 @@ using System.Linq;
 
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using System.IO;
 
 namespace DataAccess
 {
     public static class ExcelExtensions
     {
-        // Reads Excel. 
-        // Returns set of worksheets. An excel file can have multiple worksheets. Each worksheet is a CSV file. 
-        public static IDictionary<string, MutableDataTable> ReadExcel(this DataTableBuilder builder, string filename)
+        /// <summary>
+        /// Reads the first worksheet in the .xlsx file and returns it. This only supports .xlsx files (Office 2007, with open xml standard) 
+        /// and not .xls files (which had a closed file format that required COM). 
+        /// Also supports reading .csv files.
+        /// This is safe to use on a server. 
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="filename">filename </param>
+        /// <returns>table for the first sheet in the workbook. Table's name is the sheet name.</returns>
+        public static MutableDataTable ReadExcel(this DataTableBuilder builder, string filename)
         {
-            Dictionary<string, MutableDataTable> tables = new System.Collections.Generic.Dictionary<string, MutableDataTable>();
+            // For convenience
+            if (filename.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                return builder.ReadCsv(filename);
+            }
 
+            using (Stream input = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                return builder.ReadExcel(input);
+            }            
+        }
+
+        /// <summary>
+        /// Reads the first worksheet in the .xlsx file and returns it. This only supports .xlsx files (Office 2007, with open xml standard) 
+        /// and not .xls files (which had a closed file format that required COM). 
+        /// This is safe to use on a server. 
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="input">stream to read file from</param>
+        /// <returns>table for the first sheet in the workbook. Table's name is the sheet name.</returns>
+        public static MutableDataTable ReadExcel(this DataTableBuilder builder, Stream input)
+        {
             // See http://msdn.microsoft.com/en-us/library/hh298534.aspx
-            using (SpreadsheetDocument document = SpreadsheetDocument.Open(filename, false))
+            using (SpreadsheetDocument document = SpreadsheetDocument.Open(input, isEditable: false))
             {
                 // Retrieve a reference to the workbook part.
                 WorkbookPart wbPart = document.WorkbookPart;
@@ -24,36 +52,92 @@ namespace DataAccess
                 // Get the first sheet
                 foreach (Sheet sheet in wbPart.Workbook.Descendants<Sheet>())
                 {
-                    string sheetName = sheet.Name.Value;
-
-                    // Retrieve a reference to the worksheet part.
-                    WorksheetPart wsPart = (WorksheetPart)(wbPart.GetPartById(sheet.Id));
-
-                    IEnumerable<Cell> cells = wsPart.Worksheet.Descendants<Cell>();
-
-                    Dictionary2d<int, int, string> vals = new Dictionary2d<int, int, string>();
-                    foreach (Cell c in cells)
+                    MutableDataTable dt = ReadSheet(wbPart, sheet);
+                    if (dt != null)
                     {
-                        var val = CellToText(wbPart, c);
-                        var loc = c.CellReference;
-                        var loc2 = ParseRef(loc);
-                                          
-                        //Console.WriteLine("{0},{1}={2}", loc2.Item1, loc2.Item2, val);
-                        int columnId = loc2.Item1;
-                        int rowId = loc2.Item2;
-                        vals[rowId, columnId] = val;                        
-                    }
-
-                    if (vals.Count > 0)
-                    {
-                        //MutableDataTable dt = DataTable.New.From2dDictionary(vals);
-                        MutableDataTable dt = ToTable(vals);
-                        tables[sheetName] = dt;
+                        return dt;
                     }
                 }
             }
 
-            return tables;
+            throw new InvalidOperationException("Excel file is either empty or does not have a valid table in it.");
+        }
+
+        /// <summary>
+        /// Reads all sheets in the excel workbook and returns as a ordered collection of data tables.
+        /// </summary>
+        /// <param name="builder">placeholder</param>
+        /// <param name="filename">excel file to load</param>
+        /// <returns>Ordered collection of tables corresponding to non-empty sheets. Table name corresponds to sheet name.</returns>
+        public static IList<MutableDataTable> ReadExcelAllSheets(this DataTableBuilder builder, string filename)
+        {
+            using (Stream input = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                return builder.ReadExcelAllSheets(input);
+            }     
+        }
+
+        /// <summary>
+        /// Reads all sheets in the excel workbook and returns as a ordered collection of data tables.
+        /// </summary>
+        /// <param name="builder">placeholder</param>
+        /// <param name="input">stream to read from</param>
+        /// <returns>Ordered collection of tables corresponding to non-empty sheets. Table name corresponds to sheet name.</returns>
+        public static IList<MutableDataTable> ReadExcelAllSheets(this DataTableBuilder builder, Stream input)
+        {
+            List<MutableDataTable> list = new List<MutableDataTable>();
+
+            // See http://msdn.microsoft.com/en-us/library/hh298534.aspx
+            using (SpreadsheetDocument document = SpreadsheetDocument.Open(input, isEditable: false))
+            {
+                // Retrieve a reference to the workbook part.
+                WorkbookPart wbPart = document.WorkbookPart;
+
+                // Get the first sheet
+                foreach (Sheet sheet in wbPart.Workbook.Descendants<Sheet>())
+                {
+                    MutableDataTable dt = ReadSheet(wbPart, sheet);
+                    if (dt != null)
+                    {
+                        list.Add(dt);
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // Read the excel sheet from the workbook and return as a data table.
+        // Return null if sheet is empty.
+        private static MutableDataTable ReadSheet(WorkbookPart wbPart, Sheet sheet)
+        {
+            string sheetName = sheet.Name.Value;
+
+            // Retrieve a reference to the worksheet part.
+            WorksheetPart wsPart = (WorksheetPart)(wbPart.GetPartById(sheet.Id));
+
+            IEnumerable<Cell> cells = wsPart.Worksheet.Descendants<Cell>();
+
+            Dictionary2d<int, int, string> vals = new Dictionary2d<int, int, string>();
+            foreach (Cell c in cells)
+            {
+                var val = CellToText(wbPart, c);
+                var loc = c.CellReference;
+                var loc2 = ParseRef(loc);
+
+                int columnId = loc2.Item1;
+                int rowId = loc2.Item2;
+                vals[rowId, columnId] = val;
+            }
+
+            if (vals.Count > 0)
+            {
+                MutableDataTable dt = ToTable(vals);
+                dt.Name = sheetName;
+
+                return dt;
+            }
+            return null;
         }
 
         // skip access
