@@ -192,6 +192,11 @@ namespace DataAccess
                 
         private static void FlattenWorker(object item, List<string> vals)
         {
+            if (item == null)
+            {
+                vals.Add(string.Empty);
+                return;
+            }
             Type t = item.GetType();
 
             // May need to flatten recursively
@@ -218,6 +223,8 @@ namespace DataAccess
 
                     object value = GetMember(item, "Value");
                     FlattenWorker(value, vals);
+
+                    return;
                 }
                 
             }
