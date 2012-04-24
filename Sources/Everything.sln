@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTable", "DataAccess\Dat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTableTests", "DataTableTests\DataTableTests.csproj", "{443D72D5-6725-4C62-B1EE-CCB02130F5FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsvReader.Excel", "CsvReader.Excel\CsvReader.Excel.csproj", "{9E8BD069-18F3-45E4-B64A-B10B7CC10807}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{443D72D5-6725-4C62-B1EE-CCB02130F5FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{443D72D5-6725-4C62-B1EE-CCB02130F5FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{443D72D5-6725-4C62-B1EE-CCB02130F5FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E8BD069-18F3-45E4-B64A-B10B7CC10807}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E8BD069-18F3-45E4-B64A-B10B7CC10807}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E8BD069-18F3-45E4-B64A-B10B7CC10807}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E8BD069-18F3-45E4-B64A-B10B7CC10807}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
