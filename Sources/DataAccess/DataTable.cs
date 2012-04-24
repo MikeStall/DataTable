@@ -17,6 +17,15 @@ namespace DataAccess
     public abstract class DataTable
     {
         /// <summary>
+        /// Name of this data table. The semantics of the name are determined by the function that 
+        /// creates the table. Name can also be empty.
+        /// It could be a filename, an excel sheet name, a URL, or even a human readable description 
+        /// of how the table was created. 
+        /// Name is primarily a debugging tool. You can't programaticaly rely on the name property unless you created the table.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// Name of columns in the table. Columns should be case-insensitive.
         /// If this is a mutable table, columns may be added, removed, or reordered.
         /// </summary>

@@ -115,7 +115,9 @@ namespace DataAccess
         public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) 
         {
             var lines = File.ReadAllLines(filename);
-            return ReadArray(lines, separator, fAllowMismatch);
+            MutableDataTable dt = ReadArray(lines, separator, fAllowMismatch);
+            dt.Name = filename;
+            return dt;
         }
 
         private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)

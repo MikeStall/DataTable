@@ -138,7 +138,7 @@ namespace DataAccess
         {
             Debug.Assert(builder != null);
 
-            return new StreamingDataTable(filename);
+            return new StreamingDataTable(filename) { Name = filename };
         }
 
         
