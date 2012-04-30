@@ -11,6 +11,20 @@ namespace DataAccess
 {
     public static class DataTableAzureExtensions
     {
+#if false
+        public static MutableDataTable ReadFromAzureBlobLazy(this DataTableBuilder builder, CloudStorageAccount account, string containerName, string blobName)
+        {
+            CloudBlobContainer container = GetContainer(account, containerName);
+            return ReadFromAzureBlobLazy(builder, container, blobName);
+        }
+
+        
+        public static MutableDataTable ReadFromAzureBlobLazy(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
+        {
+
+        }
+#endif
+
         /// <summary>
         /// Read a data table from azure blob. This will read the entire blob into memory and return a mutable data table.
         /// </summary>
