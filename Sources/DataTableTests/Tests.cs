@@ -25,6 +25,40 @@ Sarah, 40, cherries");
         }
 
         [Fact]
+        public void ReadStronglyTypedRows()
+        {
+            var dt = GetTable();
+            var rows = dt.RowsAs<RowType>().ToArray();
+
+            Assert.Equal(3, rows.Length);
+
+            Assert.Equal("Bob", rows[0].Name);
+            Assert.Equal(20, rows[0].Age);
+
+            Assert.Equal("Ed", rows[1].Name);
+            Assert.Equal(65, rows[1].Age);
+
+            Assert.Equal("Sarah", rows[2].Name);
+            Assert.Equal(40, rows[2].Age);
+        }
+
+        class RowType
+        {
+            public string Name { get; set; }
+            public int Age { get; set; }
+
+            public enum Fruit 
+            { 
+                apples,
+                prunes, 
+                cherries,
+            }
+                        
+            // $$$: Need to sort out name problem. column name has a space.
+            public Fruit FavoriteFruit { get; set; }
+        }
+
+        [Fact]
         public void Columns()
         {
             MutableDataTable dt = GetTable();

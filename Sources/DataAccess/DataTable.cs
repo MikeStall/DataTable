@@ -37,6 +37,21 @@ namespace DataAccess
         /// </summary>
         public abstract IEnumerable<Row> Rows { get; }
 
+        /// <summary>
+        /// Enumeration of rows as strongly types. The default implementation here is 
+        /// to just to parse the results of <see cref="Rows"/>.
+        /// </summary>
+        /// <typeparam name="T">Target object type to parse.</typeparam>
+        /// <returns>enumeration of rows as strongly typed object</returns>
+        public virtual IEnumerable<T> RowsAs<T>() where T : class, new()
+        {
+            // Keeps lazy semantics of IEnumerable. We don't eagerly read rows.
+            // One optimization here would be to create the parsing object upfront (perhaps
+            // codegen a delegate), and then apply it to each row.
+            var result = from row in Rows select row.As<T>();
+            return result;
+        }
+
         private readonly static DataTableBuilder _builder = new DataTableBuilder();
 
         /// <summary>

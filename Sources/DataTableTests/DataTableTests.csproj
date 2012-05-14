@@ -49,6 +49,7 @@
     <Compile Include="FlattenTests.cs" />
     <Compile Include="MutableDataTableTests.cs" />
     <Compile Include="ReaderTests.cs" />
+    <Compile Include="RowExtensionTests.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
