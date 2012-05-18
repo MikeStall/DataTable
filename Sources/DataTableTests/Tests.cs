@@ -34,12 +34,15 @@ Sarah, 40, cherries");
 
             Assert.Equal("Bob", rows[0].Name);
             Assert.Equal(20, rows[0].Age);
+            Assert.Equal(RowType.Fruit.apples, rows[0].FavoriteFruit);
 
             Assert.Equal("Ed", rows[1].Name);
             Assert.Equal(65, rows[1].Age);
+            Assert.Equal(RowType.Fruit.prunes, rows[1].FavoriteFruit);
 
             Assert.Equal("Sarah", rows[2].Name);
             Assert.Equal(40, rows[2].Age);
+            Assert.Equal(RowType.Fruit.cherries, rows[2].FavoriteFruit);
         }
 
         class RowType

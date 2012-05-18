@@ -22,7 +22,10 @@ namespace DataAccess
 
             Type target = typeof(T);
 
-            if (columnNames.Count() == 1)
+            string[] columnNamesNormalized = columnNames.ToArray();
+            columnNamesNormalized = Array.ConvertAll(columnNamesNormalized, Normalize);
+
+            if (columnNamesNormalized.Length == 1)
             {
                 // If it's just a single column, then we don't need to traverse properties.
                 // Just parse row.Values[0]
@@ -34,6 +37,17 @@ namespace DataAccess
                 return Expression.Lambda<Func<Row, T>>(parseResultExpr, param).Compile();
             }
 
+            // Produce a delegate like:
+            // T Parse(Row row){ 
+            //   newObj = new T();
+            //   newObj.Prop1 = Parse(row.Values[i1]);  
+            //   newObj.Prop2 = Parse(row.Values[12]);
+            //   ...
+            //   return newObj
+            // }
+            //
+            // i1,i2, are computed at build time doing name matching. 
+            // Parse() function is determined at build time based on property type. 
             List<Expression> statements = new List<Expression>();
             var newObj = Expression.Variable(target, "target");
 
@@ -42,7 +56,7 @@ namespace DataAccess
             {
                 if (p.CanWrite)
                 {
-                    int index = LookupRowIndex(columnNames, p.Name);
+                    int index = LookupRowIndex(columnNamesNormalized, p.Name);
                     if (index == -1)
                     {
                         // Ignore properties where no matching column, leave as default value.
@@ -77,18 +91,44 @@ namespace DataAccess
         // Find the column index for the given name. 
         // This is done once when creating the delegate, so it can have heavier string pattern matching logic. 
         // This lets runtime just do an index lookup.
-        static int LookupRowIndex(IEnumerable<string> columnNames, string columnName)
+        // columnNames have already been normalized. 
+        static int LookupRowIndex(string[] columnNamesNormalized, string columnNameLookup)
         {
+            columnNameLookup = Normalize(columnNameLookup);
             int i = 0;
-            foreach(string x in columnNames)
+            foreach(string x in columnNamesNormalized)
             {
-                if (string.Compare(x, columnName, ignoreCase: true) == 0)
+                if (string.Compare(x, columnNameLookup, ignoreCase: true) == 0)
                 {
                     return i;
                 }
                 i++;
             }
             return -1;
+        }
+
+        // Normalize the column name. Convert to upper case, alphanumeric.
+        static string Normalize(string name)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append('_'); // avoids first char issues.
+            foreach (var ch in name)
+            {
+                if (ch >= 'a' && ch <= 'z')
+                {
+                    sb.Append((char) (ch - 'a' + 'A'));
+                }
+                else if (ch >= 'A' && ch <= 'Z')
+                {
+                    sb.Append(ch);
+                }
+                else if (ch >= '0' && ch <= '9')
+                {
+                    sb.Append(ch);
+                }
+                // ignore all other chars
+            }
+            return sb.ToString();
         }
 
         // runtime helper to find the expression. 
