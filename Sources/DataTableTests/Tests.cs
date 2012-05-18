@@ -7,8 +7,7 @@ using DataAccess;
 using System.IO;
 
 namespace DataTableTests
-{
-    
+{    
     public class Scenarios
     {
 
