@@ -47,6 +47,7 @@
     <Compile Include="DataTableBuilder.cs" />
     <Compile Include="EnumerableDataTable.cs" />
     <Compile Include="RowExtensions.cs" />
+    <Compile Include="StrongTypeBinder.cs" />
     <Compile Include="TableWriter.cs" />
     <Compile Include="MutableDataTable.cs" />
     <Compile Include="DataTable.cs" />

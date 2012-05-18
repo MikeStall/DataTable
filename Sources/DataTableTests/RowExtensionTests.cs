@@ -7,9 +7,24 @@ using DataAccess;
 
 namespace DataTableTests
 {
+    class Customer
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+    }
+
+
     // $$$ case sensitive
     public class RowExtensionTests
     {
+        [Fact]
+        public void Parser()
+        {
+            var parser = StrongTypeBinder.BuildMethod<Customer>();
+            var values = new Dictionary<string, string> { { "Name", "Bob" }, { "Age", "15" } };
+            var c = parser(values);
+        }
+
         [Fact]
         public void ConvertNormal()
         {
