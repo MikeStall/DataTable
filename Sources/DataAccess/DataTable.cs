@@ -45,12 +45,27 @@ namespace DataAccess
         /// <returns>enumeration of rows as strongly typed object</returns>
         public virtual IEnumerable<T> RowsAs<T>() where T : class, new()
         {
-            // Keeps lazy semantics of IEnumerable. We don't eagerly read rows.
-            // One optimization here would be to create the parsing object upfront (perhaps
-            // codegen a delegate), and then apply it to each row.
-            var result = from row in Rows select row.As<T>();
+            Func<Row, T> parser;
+
+            // Get cached version of the function. 
+            // This is optimized assuming that all reads are for the same schema.
+            // This code should be thread safe. 
+            {
+                parser = _parserFunc as Func<Row, T>;
+                if (parser == null)
+                {
+                    parser = StrongTypeBinder.BuildMethod<T>(this.ColumnNames);
+                    _parserFunc = parser;
+                }
+            }
+
+            // Use the local parser function, not the field, in case the field is switched on us by another thread.
+            var result = from row in Rows select parser(row);
             return result;
         }
+
+        // Cache the parser function. 
+        private object _parserFunc;
 
         private readonly static DataTableBuilder _builder = new DataTableBuilder();
 

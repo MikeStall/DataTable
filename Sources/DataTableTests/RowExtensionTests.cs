@@ -20,9 +20,16 @@ namespace DataTableTests
         [Fact]
         public void Parser()
         {
-            var parser = StrongTypeBinder.BuildMethod<Customer>();
-            var values = new Dictionary<string, string> { { "Name", "Bob" }, { "Age", "15" } };
-            var c = parser(values);
+            //var parser = StrongTypeBinder.BuildMethod<Customer>();
+            //var values = new Dictionary<string, string> { { "Name", "Bob" }, { "Age", "15" } };
+            //var c = parser(values);
+
+            Row r = new MockRow(new Dictionary<string, string> { 
+                {"name", "bob"},
+                {"age", "15" }
+            });
+            var parser = StrongTypeBinder.BuildMethod<Customer>(r.ColumnNames);
+            var c = parser(r);
         }
 
         [Fact]

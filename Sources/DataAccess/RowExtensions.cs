@@ -11,6 +11,7 @@ namespace DataAccess
     /// </summary>
     public static class RowExtension
     {
+
         /// <summary>
         /// Makes a best effort to parse the row into a strongly typed object. 
         /// This does a case-insensitive match of the Target object's property names against the table's column names.
@@ -20,6 +21,21 @@ namespace DataAccess
         /// <param name="row">incoming row to be parsed</param>
         /// <returns>an object representing the row</returns>
         public static T As<T>(this Row row) where T : new()
+        {
+            var parser = StrongTypeBinder.BuildMethod<T>(row.ColumnNames);
+            var c = parser(row);
+            return c;
+        }
+
+        /// <summary>
+        /// Makes a best effort to parse the row into a strongly typed object. 
+        /// This does a case-insensitive match of the Target object's property names against the table's column names.
+        /// Parse errors are ignored and may produce invalid results for the corresponding cell.
+        /// </summary>
+        /// <typeparam name="T">Target object type to parse.</typeparam>
+        /// <param name="row">incoming row to be parsed</param>
+        /// <returns>an object representing the row</returns>
+        public static T As2<T>(this Row row) where T : new()
         {
             var type = typeof(T);
             // check if the Type is a primitive. Maybe we're just extracting a single row.
