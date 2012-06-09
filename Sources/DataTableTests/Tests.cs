@@ -125,7 +125,7 @@ Sarah, 40, cherries");
 
             StringWriter sw = new StringWriter();
             dt.SaveToStream(sw);
-            Assert.Equal(
+            AnalyzeTests.AssertEquals(
 @"x,y
 11,12
 21,22

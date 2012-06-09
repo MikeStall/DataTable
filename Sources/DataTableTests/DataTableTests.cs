@@ -19,7 +19,7 @@ namespace DataTableTests
             dt.SaveCSV(temp);
 
             string content = File.ReadAllText(temp);
-            Assert.Equal(
+            AnalyzeTests.AssertEquals(
 @"value
 10
 20

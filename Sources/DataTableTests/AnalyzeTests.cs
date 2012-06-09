@@ -41,11 +41,20 @@ John, Smith, 34";
             return dt;
         }
 
+        // Do string comparison, ignoring ignoring newline (\r\n vs just \n)
+        public static void AssertEquals(string content, string actual)
+        {
+            content = content.Replace("\r\n", "\n");
+            actual = actual.Replace("\r\n", "\n");
+            Assert.Equal(content, actual);
+        }
+
         public static void AssertEquals(string content, DataTable dt)
         {
             StringWriter sw = new StringWriter();
             dt.SaveToStream(sw);
-            Assert.Equal(content, sw.ToString());
+            string actual = sw.ToString();
+            AssertEquals(content, actual);
         }
 
         [Fact]
@@ -153,16 +162,16 @@ Ed,Smith,12
             File.Delete(file1);
             File.Delete(file2);
 
-            Assert.Equal(
+            AnalyzeTests.AssertEquals(
 @"first,last,age
 Bob,Smith,12
 Ed,Smith,12
 John,Smith,34
 ", content1);
 
-            
 
-            Assert.Equal(
+
+            AnalyzeTests.AssertEquals(
 @"first,last,age
 Bob,Jones,34
 ", content2);
