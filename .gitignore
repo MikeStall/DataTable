@@ -3,3 +3,17 @@ nuget drops
 bin
 obj
 *.suo
+
+/Sources/private_everything.sln
+/Sources/packages/DocumentFormat.OpenXml.1.0/DocumentFormat.OpenXml.1.0.nupkg
+/Sources/packages/DocumentFormat.OpenXml.1.0/lib/DocumentFormat.OpenXml.dll
+/Sources/packages/WindowsAzure.Storage.1.6/WindowsAzure.Storage.1.6.nupkg
+/Sources/packages/WindowsAzure.Storage.1.6/lib/net35-full/Microsoft.WindowsAzure.StorageClient.dll
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.dll
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.dll.tdnet
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.runner.msbuild.dll
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.runner.tdnet.dll
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.runner.utility.dll
+/Sources/packages/xunit.1.9.0.1566/lib/xunit.xml
+/Sources/packages/xunit.1.9.0.1566/xunit.1.9.0.1566.nupkg
+/Sources/Driver
