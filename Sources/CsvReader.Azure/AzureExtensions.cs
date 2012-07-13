@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace DataAccess
 {
-    public static class DataTableAzureExtensions
+    public static class DataTableBuilderAzureExtensions
     {
 #if false
         public static MutableDataTable ReadFromAzureBlobLazy(this DataTableBuilder builder, CloudStorageAccount account, string containerName, string blobName)
@@ -61,39 +61,12 @@ namespace DataAccess
             string content = blob.DownloadText();
             
             var stream = new StringReader(content);
-            return DataTable.New.Read(stream);
+            var dt = DataTable.New.Read(stream);
+            dt.Name = container.Name + "." + blobName;
+            return dt;
         }
 
-        /// <summary>
-        /// Save the data table to the given azure blob. This will overwrite an existing blob.
-        /// </summary>
-        /// <param name="table">instance of table to save</param>
-        /// <param name="account">azure acount</param>
-        /// <param name="containerName">conatiner name</param>
-        /// <param name="blobName">blob name</param>
-        public static void SaveToAzureBlob(this DataTable table, CloudStorageAccount account, string containerName, string blobName)
-        {
-            CloudBlobContainer container = GetContainer(account, containerName);
-            SaveToAzureBlob(table, container, blobName);
-        }
-
-        /// <summary>
-        /// Save the data table to the given azure blob. This will overwrite an existing blob.
-        /// </summary>
-        /// <param name="table">instance of table to save</param>
-        /// <param name="container">conatiner</param>
-        /// <param name="blobName">blob name</param>
-        public static void SaveToAzureBlob(this DataTable table, CloudBlobContainer container, string blobName)
-        {
-            var blob = container.GetBlobReference(blobName);
-            using (BlobStream stream = blob.OpenWrite())
-            using (TextWriter writer = new StreamWriter(stream))
-            {
-                table.SaveToStream(writer);
-            }
-        }
-
-        private static CloudBlobContainer GetContainer(CloudStorageAccount account, string containerName)
+        internal static CloudBlobContainer GetContainer(CloudStorageAccount account, string containerName)
         {
             var client = account.CreateCloudBlobClient();
 
@@ -123,6 +96,22 @@ namespace DataAccess
                     throw;
                 }
             }
+        }
+
+        /// <summary>
+        /// Read an Azure Table as a CSV. Returned CSV includes columns for the ParitionKey and RowKey.
+        /// The row order is the same as Azure's natural row ordering (sorted by partition key, rowkey)
+        /// This is a lazy function, so it reads the table rows at a time and does not read the entire table into memory. 
+        /// </summary>
+        /// <param name="builder">builder</param>
+        /// <param name="account">azure storage account</param>
+        /// <param name="tableName">name of table within account</param>
+        /// <returns></returns>
+        public static DataTable ReadAzureTableLazy(this DataTableBuilder builder, CloudStorageAccount account, string tableName)
+        {
+            CloudTableClient tableClient = account.CreateCloudTableClient();
+
+            return new AzureStreamingTable { _tableName = tableName, _tableClient = tableClient, Name = tableName };
         }
     }
 }

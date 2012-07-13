@@ -47,7 +47,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AzureDataTableExtensions.cs" />
     <Compile Include="AzureExtensions.cs" />
+    <Compile Include="AzureStreamingTable.cs" />
+    <Compile Include="GenericTableReader.cs" />
+    <Compile Include="GenericTableWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -14,6 +14,27 @@ namespace DataAccess
     // Binder for creating a strong type from a Row
     internal class StrongTypeBinder
     {
+        // Map from type property names to column names.
+        public static Type[] GetTypes(Type target, DataTable table)
+        {
+            string[] columnNamesNormalized = table.ColumnNames.ToArray();
+            Type[] types = new Type[columnNamesNormalized.Length];
+
+            columnNamesNormalized = Array.ConvertAll(columnNamesNormalized, Normalize);
+
+            PropertyInfo[] targetProperties = target.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            foreach (PropertyInfo p in targetProperties)
+            {
+                int index = LookupRowIndex(columnNamesNormalized, p.Name);
+                if (index >= 0)
+                {
+                    types[index] = p.PropertyType;
+                }
+            }
+
+            return types;
+        }
+
         // Create a strongly-typed custom parse method for the object. 
         // This can frontload all type analysis and generate a dedicated method that avoids Reflection. 
         public static Func<Row, T> BuildMethod<T>(IEnumerable<string> columnNames)
