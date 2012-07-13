@@ -234,6 +234,12 @@ namespace DataAccess
             }
 
             // InnerText will show Table formulas. We want the actual computed value.  
+            if (theCell.CellValue == null)
+            {
+                // may happen if a cell is empty
+                return string.Empty;
+            }
+
             return theCell.CellValue.Text;
 
         }
