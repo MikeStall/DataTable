@@ -25,9 +25,11 @@ namespace DataAccess
             string[] columnNamesNormalized = columnNames.ToArray();
             columnNamesNormalized = Array.ConvertAll(columnNamesNormalized, Normalize);
 
-            if (columnNamesNormalized.Length == 1)
+            PropertyInfo[] targetProperties = target.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+            if ((targetProperties.Length == 0) && (columnNamesNormalized.Length == 1))
             {
-                // If it's just a single column, then we don't need to traverse properties.
+                // If it's just a single column and we have no properties (such as for int, guid, double, etc)
                 // Just parse row.Values[0]
                 int index = 0;
                 MethodInfo miLookup = ((Func<Row, int, string>)LookupExpression).Method;
@@ -52,7 +54,7 @@ namespace DataAccess
             var newObj = Expression.Variable(target, "target");
 
             statements.Add(Expression.Assign(newObj, Expression.New(target)));
-            foreach (PropertyInfo p in target.GetProperties())
+            foreach (PropertyInfo p in targetProperties)
             {
                 if (p.CanWrite)
                 {

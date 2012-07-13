@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using DataAccess;
+using System.IO;
 
 namespace DataTableTests
 {
@@ -123,6 +124,38 @@ namespace DataTableTests
             private string Private { get; set; } // private properties are ignored
 
             public string GetPrivate() { return this.Private; }
+        }
+
+
+        // Regression test for single column with a complex type.
+        // https://github.com/MikeStall/DataTable/issues/2
+        public class RowData
+        {
+            public string Column1 { get; set; }
+            public string Column2 { get; set; }
+        }
+
+        [Fact]
+        public void TestSingleColumn()
+        {
+            string data = @"column2
+row1
+row2
+";
+            using (var rd = new StringReader(data))
+            {
+                var dt = DataTable.New.Read(rd);
+                var rows = dt.RowsAs<RowData>().ToArray();
+
+                Assert.Equal(2, rows.Length);
+
+                Assert.True(rows[0].Column1 == string.Empty);
+                Assert.True(rows[0].Column2 == "row1");
+
+                Assert.True(rows[1].Column1 == string.Empty);
+                Assert.True(rows[1].Column2 == "row2");
+
+            }
         }
     }
 
