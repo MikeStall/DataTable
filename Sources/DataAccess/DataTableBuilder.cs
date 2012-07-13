@@ -70,13 +70,26 @@ namespace DataAccess
         /// <returns>a new in-memory table</returns>
         public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream)
         {
+            return Read(builder, stream, ',');
+        }
+
+        /// <summary>
+        /// Read a table from the stream into memory. 
+        /// Infer the schema from the header row. Biased to CSV, but may handle tab delimeters too. 
+        /// </summary>
+        /// <param name="builder">ignored</param>
+        /// <param name="stream">input stream to read from</param>
+        /// <param name="delimiter">delimiter characeter to use for separatior</param>
+        /// <returns>a new in-memory table</returns>
+        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, char delimiter)
+        {
             Debug.Assert(builder != null);
             if (stream == null)
             {
                 throw new ArgumentNullException("stream");
             }
 
-            return Reader.Read(stream);
+            return Reader.Read(stream, delimiter);
         }
 
         /// <summary>

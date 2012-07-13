@@ -93,10 +93,10 @@ namespace DataAccess
             }   
         }
 
-        public static MutableDataTable Read(TextReader stream)
+        public static MutableDataTable Read(TextReader stream, char delimiter = '\0')
         {
             IList<string> lines = ReadAllLines(stream);
-            return ReadArray(lines, '\0', false);      
+            return ReadArray(lines, delimiter, false);      
         }
 
         public static char GuessSeparateFromHeaderRow(string header)
@@ -105,8 +105,20 @@ namespace DataAccess
             {
                 return '\t';
             }
+
+            if (header.Contains(","))
+            {
+                return ',';
+            }
+
+            if (header.Contains(";"))
+            {
+                return ';';
+            }
             
-            return ',';            
+            // Fallback is always comma. This implies a single column. 
+            return ',';
+            
         }
 
         // Read in a Ascii file that uses the given separate characters.
