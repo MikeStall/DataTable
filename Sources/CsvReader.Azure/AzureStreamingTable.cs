@@ -25,24 +25,29 @@ namespace DataAccess
         {
             get
             {
-                if (_columnNames == null)
-                {
-                    TableServiceContext ctx = _tableClient.GetDataServiceContext();
-                    ctx.IgnoreMissingProperties = true;
-                    ctx.ReadingEntity += GenericTableReader.OnReadingEntity;
-
-                    var x = from o in ctx.CreateQuery<GenericEntity>(_tableName) select o;
-                    GenericEntity all = x.First();
-
-                    List<string> props = new List<string>();
-                    props.Add("PartitionKey");
-                    props.Add("RowKey");
-
-                    props.AddRange(all.properties.Keys);
-
-                    _columnNames = props.ToArray();
-                }
+                InitColumnNames();
                 return _columnNames;
+            }
+        }
+
+        private void InitColumnNames()
+        {
+            if (_columnNames == null)
+            {
+                TableServiceContext ctx = _tableClient.GetDataServiceContext();
+                ctx.IgnoreMissingProperties = true;
+                ctx.ReadingEntity += GenericTableReader.OnReadingEntity;
+
+                var x = from o in ctx.CreateQuery<GenericEntity>(_tableName) select o;
+                GenericEntity all = x.First();
+
+                List<string> props = new List<string>();
+                props.Add("PartitionKey");
+                props.Add("RowKey");
+
+                props.AddRange(all.properties.Keys);
+
+                _columnNames = props.ToArray();
             }
         }
 
@@ -50,6 +55,7 @@ namespace DataAccess
         {
             get
             {
+                InitColumnNames();
                 TableServiceContext ctx = _tableClient.GetDataServiceContext();
                 ctx.IgnoreMissingProperties = true;
                 ctx.ReadingEntity += GenericTableReader.OnReadingEntity;

@@ -39,7 +39,7 @@ namespace DataAccess
         // $$$ Should be some common helper. This is protected on Row; but should be on table. 
         private static int GetColumnIndex(string columnName, string[] columnNames)
         {
-            for (int i = 0; i < columnName.Length; i++)
+            for (int i = 0; i < columnNames.Length; i++)
             {
                 if (Compare(columnNames[i], columnName))
                 {

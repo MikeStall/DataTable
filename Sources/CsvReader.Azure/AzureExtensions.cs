@@ -33,10 +33,10 @@ namespace DataAccess
         /// <param name="containerName">conatiner name</param>
         /// <param name="blobName">blob name</param>
         /// <returns>in-memory mutable datatable from blob</returns>
-        public static MutableDataTable ReadFromAzureBlob(this DataTableBuilder builder, CloudStorageAccount account, string containerName, string blobName)
+        public static MutableDataTable ReadAzureBlob(this DataTableBuilder builder, CloudStorageAccount account, string containerName, string blobName)
         {
             CloudBlobContainer container = GetContainer(account, containerName);
-            return ReadFromAzureBlob(builder, container, blobName);
+            return ReadAzureBlob(builder, container, blobName);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace DataAccess
         /// <param name="container">conatiner</param>
         /// <param name="blobName">blob name</param>
         /// <returns>in-memory mutable datatable from blob</returns>
-        public static MutableDataTable ReadFromAzureBlob(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
+        public static MutableDataTable ReadAzureBlob(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
         {            
             CloudBlob blob = container.GetBlobReference(blobName);
             if (!Exists(blob))
