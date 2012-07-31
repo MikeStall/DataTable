@@ -59,6 +59,34 @@ namespace DataAccess
             }
         }
 
+        // Get a function that will determine the partition row key
+        private static Func<int, Row, ParitionRowKey> GetPartitionRowKeyFunc(string[] columnNames)
+        { 
+            // If incoming table has columns named "PartitionKey" and "RowKey", then use those. 
+            int iPartitionKey = GetColumnIndex("PartitionKey", columnNames);
+            int iRowKey = GetColumnIndex("RowKey", columnNames);
+            if (iPartitionKey >= 0 && iRowKey  >= 0)
+            {
+                // Both row and partition key
+                return (rowIndex, row) => new ParitionRowKey(row.Values[iPartitionKey], row.Values[iRowKey]);
+            }
+            else if ((iPartitionKey < 0) && (iRowKey >= 0))
+            {
+                // Only row Key
+                return (rowIndex, row) => new ParitionRowKey("1", row.Values[iRowKey]);
+            }
+            else if ((iPartitionKey >= 0) && (iRowKey < 0))
+            {
+                // Only a partition key
+                return (rowIndex, row) => new ParitionRowKey(row.Values[iPartitionKey], rowIndex);
+            }
+            else
+            {                    
+                // format rowkey so that when sorted alpanumerically, it's still ascending
+                return (rowIndex, row) => new ParitionRowKey("1", rowIndex);
+            }            
+        }
+
         // Write a DataTable to an AzureTable.
         // DataTable's Rows are an unstructured property bag.
         // columnTypes - type of the column, or null if column should be skipped. Length of columnTypes should be the same as number of columns.
@@ -99,22 +127,7 @@ namespace DataAccess
 
             if (funcComputeKeys == null)
             {
-                // If incoming table has columns named "PartitionKey" and "RowKey", then use those. 
-                int iPartitionKey = GetColumnIndex("PartitionKey", columnNames);
-                int iRowKey = GetColumnIndex("RowKey", columnNames);
-                if (iPartitionKey >= 0 && iRowKey  >= 0)
-                {
-                    funcComputeKeys = (rowIndex, row) => 
-                        new ParitionRowKey 
-                        { 
-                            PartitionKey = row.Values[iPartitionKey],
-                            RowKey = row.Values[iRowKey]
-                        };
-                }
-                else
-                {                    
-                    funcComputeKeys = DefaultPartionRow;
-                }
+                funcComputeKeys = GetPartitionRowKeyFunc(columnNames);
             }
 
             // Validate columnTypes 
@@ -147,9 +160,13 @@ namespace DataAccess
                 _columnNames = table.ColumnNames.ToArray()
             };
             
+            // Batch rows for performance, 
+            // but all rows in the batch must have the same partition key
             TableServiceContext ctx = null;
+            string lastPartitionKey = null;
 
             int rowCounter = 0;
+            int batchSize = 0;
             foreach (Row row in table.Rows)
             {
                 GenericWriterEntity entity = new GenericWriterEntity { _source = row };
@@ -157,17 +174,29 @@ namespace DataAccess
                 var partRow = funcComputeKeys(rowCounter, row);
                 entity.PartitionKey = partRow.PartitionKey;
                 entity.RowKey = partRow.RowKey;
-
-                if (ctx == null)
-                {
-                    ctx = tableClient.GetDataServiceContext();
-                    ctx.WritingEntity += new EventHandler<ReadingWritingEntityEventArgs>(w.ctx_WritingEntity);
-                }
-
-                ctx.AddObject(tableName, entity);
                 rowCounter++;
 
-                if (rowCounter % 50 == 0)
+                // but all rows in the batch must have the same partition key
+                if ((ctx != null) && (lastPartitionKey != null) && (lastPartitionKey != entity.PartitionKey))
+                {
+                    ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
+                    ctx = null;
+                }                
+                
+                if (ctx == null)
+                {
+                    lastPartitionKey = null;
+                    ctx = tableClient.GetDataServiceContext();
+                    ctx.WritingEntity += new EventHandler<ReadingWritingEntityEventArgs>(w.ctx_WritingEntity);
+                    batchSize = 0;
+                }
+
+                // Add enty to the current batch
+                ctx.AddObject(tableName, entity);
+                lastPartitionKey = entity.PartitionKey;
+                batchSize++;
+                                
+                if (batchSize % 50 == 0)
                 {
                     ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
                     ctx = null;
@@ -178,13 +207,6 @@ namespace DataAccess
             {
                 ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
             }
-        }
-
-        // default row,partition key creator. Everything in a single partition, and rows increment. 
-        static ParitionRowKey DefaultPartionRow(int rowIndex, Row row)
-        {
-            // format rowkey so that when sorted alpanumerically, it's still ascending
-            return new ParitionRowKey { PartitionKey = "1", RowKey = rowIndex.ToString("D8") };
         }
 
         private void ctx_WritingEntity(object sender, ReadingWritingEntityEventArgs args)

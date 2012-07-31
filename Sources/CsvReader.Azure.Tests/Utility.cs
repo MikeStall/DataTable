@@ -36,6 +36,8 @@ namespace CsvReader.Azure.Tests
             }
         }
 
+        // Table will come back sorted by (parition, row key)
+        // Integers don't sort nicely as strings.
         public static T[] ReadTable<T>(CloudStorageAccount account, string tableName) where T : TableServiceEntity
         {
             CloudTableClient tableClient = account.CreateCloudTableClient();

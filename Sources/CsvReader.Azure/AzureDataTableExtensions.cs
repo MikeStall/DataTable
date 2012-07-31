@@ -85,5 +85,21 @@ namespace DataAccess
     {
         public string PartitionKey { get; set; }
         public string RowKey { get; set; }
+
+        public ParitionRowKey()
+        { }
+
+        public ParitionRowKey(string partitionKey, string rowKey)
+        {
+            PartitionKey = partitionKey;
+            RowKey = rowKey;
+        }
+
+        // pad rowkey with 0s so that it sorts nicely. 
+        public ParitionRowKey(string partitionKey, int rowKey)            
+        {
+            PartitionKey = partitionKey;
+            RowKey = rowKey.ToString("D8");
+        }
     }
 }
