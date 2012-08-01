@@ -33,7 +33,7 @@ namespace DataAccess
         private static bool IsSpecialColumnName(string columnName)
         { 
             // Case-insensitive compare
-            return Compare(columnName, "PartitionKey") || Compare(columnName, "RowKey") || Compare(columnName, "Timestampe");
+            return Compare(columnName, "PartitionKey") || Compare(columnName, "RowKey") || Compare(columnName, "Timestamp");
         }
 
         // $$$ Should be some common helper. This is protected on Row; but should be on table. 
@@ -117,6 +117,8 @@ namespace DataAccess
             {
                 throw new ArgumentException(string.Format("columnTypes should have {0} elements", columnNames.Length), "columnTypes");
             }
+
+            columnTypes = columnTypes.ToArray(); // create a copy for mutation. 
             for (int i = 0; i < columnNames.Length; i++)
             {
                 if (IsSpecialColumnName(columnNames[i]))

@@ -6,6 +6,8 @@ using Xunit;
 using Microsoft.WindowsAzure;
 using DataAccess;
 using Microsoft.WindowsAzure.StorageClient;
+using System.IO;
+using System.Diagnostics;
 
 namespace CsvReader.Azure.Tests
 {
@@ -14,6 +16,107 @@ namespace CsvReader.Azure.Tests
         static private CloudStorageAccount GetStorage()
         {
             return CloudStorageAccount.DevelopmentStorageAccount;
+        }
+
+        [Fact]
+        public void DownloadNonExistentBlob()
+        {
+            var account = GetStorage();
+            var client = account.CreateCloudBlobClient();
+
+            string containerName = "csvtestcontainer";
+            string blobName = "csvtestblobnoexist";
+
+            // Test when container doesn't exist.
+            DeleteContainer(account, containerName);
+            Assert.Throws<FileNotFoundException>(() => DataTable.New.ReadAzureBlob(account, containerName, blobName));
+
+            // Container exists, blob name doesn't.
+            CloudBlobContainer container = client.GetContainerReference(containerName);
+            container.CreateIfNotExist();
+            Assert.Throws<FileNotFoundException>(() => DataTable.New.ReadAzureBlob(account, containerName, blobName));
+        }
+
+        [Fact]
+        public void UploadUnsupportedTypeFails()
+        {
+            // Save a table to azure, and then use traditional techniques to query it back. 
+            var account = GetStorage();
+            
+            var source = from x in Enumerable.Range(1, 10) select new { N = x, N2 = x * x };
+            DataTable dtSource = DataTable.New.FromEnumerable(source);
+
+            Assert.Throws<InvalidOperationException>(() => dtSource.SaveToAzureTable(account, "table", new Type[] { typeof(object), typeof(object) }));
+        }
+
+        [Fact]
+        public void UploadCsvToBlob()
+        {
+            // Save a table to azure, and then use traditional techniques to query it back. 
+            var account = GetStorage();
+            var client = account.CreateCloudBlobClient();
+
+            var source = from x in Enumerable.Range(1, 10) select new { N = x, N2 = x * x };
+            DataTable dtSource = DataTable.New.FromEnumerable(source);
+            string originalContent = TableToString(dtSource);
+
+            string containerName = "csvtestcontainer";
+            string blobName = "csvtestblob";
+
+            // Will create container if it doesn't exist. So delete
+            DeleteContainer(account, containerName);
+
+            dtSource.SaveToAzureBlob(account, containerName, blobName);
+
+            // Verify existence.
+            {
+                CloudBlobContainer container = client.GetContainerReference(containerName);
+                CloudBlob blob = container.GetBlobReference(blobName);
+                string contents = blob.DownloadText();
+                Assert.Equal(originalContent, contents);
+            }
+
+            // Now download with helpers.
+            DataTable dtDownload = DataTable.New.ReadAzureBlob(account, containerName, blobName);
+            string downloadContent = TableToString(dtDownload);
+            Assert.Equal(containerName + "." + blobName, dtDownload.Name); // verify name
+            Assert.Equal(originalContent, downloadContent); // verify contents
+        }
+
+        private static string TableToString(DataTable dt)
+        {
+            StringWriter sw = new StringWriter();
+            dt.SaveToStream(sw);
+            return sw.ToString();
+        }
+
+        [DebuggerNonUserCode]
+        private static void DeleteContainer(CloudStorageAccount account, string containerName)
+        {
+            var client = account.CreateCloudBlobClient();
+            CloudBlobContainer container = client.GetContainerReference(containerName);
+            try
+            {
+                container.Delete();
+            }
+            catch
+            {
+                // Throws if container doesn't exist. That's ok. 
+            }
+        }
+
+        [Fact]
+        public void UploadInvalidTableName()
+        {
+            var account = GetStorage();
+
+            var source = from x in Enumerable.Range(1, 10) select new { N = x, N2 = x * x };
+            DataTable dtSource = DataTable.New.FromEnumerable(source);
+
+            string tableName = "csvtesttable%%"; // illegal name
+
+            // Illegal name should get graceful error.
+            Assert.Throws < InvalidOperationException>(() => dtSource.SaveToAzureTable(account, tableName));
         }
 
         [Fact]
@@ -142,6 +245,7 @@ namespace CsvReader.Azure.Tests
             dtSource.SaveToAzureTable(account, tableName, new Type[] { typeof(int) }, explicitFunc);
 
             DataTable dtFromAzure = DataTable.New.ReadAzureTableLazy(account, tableName);
+            Assert.Equal(tableName, dtFromAzure.Name); // names should match.
 
             TestRecord[] result = Utility.ReadTable<TestRecord>(account, tableName);
             Assert.Equal(3, result.Length);
@@ -157,7 +261,36 @@ namespace CsvReader.Azure.Tests
         }
 
         [Fact]
-        public void AzureTables()
+        public void RoundtripTable()
+        {
+            // Test that if we download and then reupload, it's ok. 
+            var account = GetStorage();
+
+            var source = from x in Enumerable.Range(1, 200) select new { N = x, N2 = x * x };
+            DataTable dtSource = DataTable.New.FromEnumerable(source);
+
+            string tableName = "csvtesttable";
+
+            dtSource.SaveToAzureTable(account, tableName); // original upload
+
+            DataTable dtDownload1 = DataTable.New.ReadAzureTableLazy(account, tableName);
+            MutableDataTable dtA = DataTable.New.GetMutableCopy(dtDownload1);            
+
+            // this writes back to the source that dtDownload1 was streaming from. 
+            // But we already copied to dtA, so safe to overwrite.
+            dtA.SaveToAzureTable(account, tableName); // 2nd upload
+
+            DataTable dtDownload2 = DataTable.New.ReadAzureTableLazy(account, tableName); 
+            MutableDataTable dtB = DataTable.New.GetMutableCopy(dtDownload2);
+
+            // Everything except timestamps should match.
+            dtA.DeleteColumns("TimeStamp");
+            dtB.DeleteColumns("TimeStamp");
+            Utility.AssertEquals(dtA, dtB);          
+        }
+
+        [Fact]
+        public void UploadCsvToAzureTables()
         {
             // Save a table to azure, and then use traditional techniques to query it back. 
             // Use a large enough value to forcve batching and spilling.
@@ -192,7 +325,7 @@ namespace CsvReader.Azure.Tests
             // Compare contents with original table that was uploaded. Easy way to do this is to just keep the original columns.
             MutableDataTable dt5 = DataTable.New.GetMutableCopy(dtFromAzure);
             dt5.KeepColumns("N", "N2");
-            Utility.AssertEquals(dtSource, dt5);            
+            Utility.AssertEquals(dtSource, dt5);          
         }
     }
 

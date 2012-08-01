@@ -9,8 +9,10 @@ using System.Diagnostics;
 
 namespace DataAccess
 {
-    // Azure Extensions for DataTable instance.
-    // These generally support saving a datatable up to Azure as a blob of Azure Table.
+    /// <summary>
+    /// Azure Extensions for DataTable instance.
+    /// These generally support saving a datatable up to Azure as a blob or Azure Table.
+    /// </summary>
     public static class DataTableAzureExtensions
     {
         /// <summary>
@@ -42,7 +44,14 @@ namespace DataAccess
             }
         }
 
-        // Untyped. Save all types as strings. 
+        /// <summary>
+        /// Save to azure table, typing all columns as strings. 
+        /// Overwrite if the table already exists
+        /// Fabricate a partition and row key is they're not provided in the table.
+        /// </summary>
+        /// <param name="table">datatable to save</param>
+        /// <param name="account">cloud account to write to</param>
+        /// <param name="tableName">azure table name to save as. </param>
         public static void SaveToAzureTable(this DataTable table, CloudStorageAccount account, string tableName)
         {
             // When no types are provided, just assume they're all strings.
@@ -56,22 +65,22 @@ namespace DataAccess
             table.SaveToAzureTable(account, tableName, columnTypes);
         }
 
-        // Each row from the table is typed as a T. 
-        // Matches each property type on T to a column name (using same rules as the strongly typed binder)
-        public static void SaveToAzureTable<T>(this DataTable table, CloudStorageAccount account, string tableName)
-        {
-            throw new NotImplementedException();
-            // Type[] columnTypes = StrongTypeBinder $$$ Internal
-        }
-                
         public static void SaveToAzureTable(this DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes)
         {
             table.SaveToAzureTable(account, tableName, columnTypes, funcComputeKeys : null);
         }
 
-        // ColumnTypes is a parallel array to table.ColumnNames.
-        // columnTypes should be types that can be normalized to OData (string,byte,sbyte,i16,i32,i64,double,single,boolean,decimal, datetime, guid).
-        // if columnTypes[i] is null, then that column is skipped.
+        /// <summary>
+        /// Save the datatable up to an AzureTable. Overwrite if the azure table already exists.
+        /// </summary>
+        /// <param name="table">source table to save</param>
+        /// <param name="account">azure storage account</param>
+        /// <param name="tableName">name of azure table to write to. </param>
+        /// <param name="columnTypes">parallel array to table.ColumnNames. 
+        /// Strong typing for the columns in the azure table. Column i is skipped if columnTypes[i] is null.
+        /// ColumnTypes should be types that can be normalized to OData (string,byte,sbyte,i16,i32,i64,double,single,boolean,decimal, datetime, guid).
+        /// </param>
+        /// <param name="funcComputeKeys">function to compute the partion and row keys for each row. </param>
         public static void SaveToAzureTable(this DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes, Func<int, Row, ParitionRowKey> funcComputeKeys)
         {
             GenericTableWriter.SaveToAzureTable(table, account, tableName, columnTypes, funcComputeKeys);
@@ -80,22 +89,44 @@ namespace DataAccess
 
     /// <summary>
     /// Class to encapsulate a partition and row key. This is similar to Tuple[string,string], but less ambiguous. 
+    /// Partition plus Row key must be unique. 
     /// </summary>
     public class ParitionRowKey
     {
+        /// <summary>
+        /// Partition key to use for Azure Table. 
+        /// </summary>
         public string PartitionKey { get; set; }
+        
+        /// <summary>
+        /// Row key to use for azure table.
+        /// </summary>
         public string RowKey { get; set; }
 
+        /// <summary>
+        /// Empty constructor. Set the partition and row key via the properties.
+        /// </summary>
         public ParitionRowKey()
         { }
 
+
+        /// <summary>
+        /// initialize a container for an parition key and row key pair.
+        /// </summary>
+        /// <param name="partitionKey">partition key for azure table row</param>
+        /// <param name="rowKey">Row key for azure table row.</param>
         public ParitionRowKey(string partitionKey, string rowKey)
         {
             PartitionKey = partitionKey;
             RowKey = rowKey;
         }
 
-        // pad rowkey with 0s so that it sorts nicely. 
+        /// <summary>
+        /// initialize a container for an parition key and row key pair.
+        /// Overload to pad rowkey with 0s so that rows sort nicely as strings.
+        /// </summary>
+        /// <param name="partitionKey">partition key for azure table row</param>
+        /// <param name="rowKey">Row key for azure table row. pad rowkey with 0s so that it sorts nicely. </param>
         public ParitionRowKey(string partitionKey, int rowKey)            
         {
             PartitionKey = partitionKey;
