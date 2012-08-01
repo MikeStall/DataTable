@@ -17,3 +17,5 @@ obj
 /Sources/packages/xunit.1.9.0.1566/lib/xunit.xml
 /Sources/packages/xunit.1.9.0.1566/xunit.1.9.0.1566.nupkg
 /Sources/Driver
+/Sources/packages/Microsoft.WindowsAzure.ConfigurationManager.1.7.0.1
+/Sources/packages/xunit.1.9.1
