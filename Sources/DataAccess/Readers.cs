@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System.Text;
 
 namespace DataAccess
 {
@@ -25,41 +23,160 @@ namespace DataAccess
         public static string[] split(string input, char separator) {
             return split(input, separator, true);
         }
+
+        private enum SplitState
+        {
+            Start = 0,
+            StartQuote,
+            StartSeparator,
+            PotentialStartSpace,
+            Word,
+            EscapedWord,
+            PotentialEndQuote,
+            PotentialEndSpace,
+            UnescapedQuote,
+            MissingEndQuote
+        }
+        
         public static string[] split(string input, char separator, bool trim) {
+            SplitState currentState = SplitState.Start;
             List<string> parts = new List<string>();
 
-            bool fEscapeMode = false;
             StringBuilder sb = new StringBuilder();
             foreach (char ch in input) {
-                if (fEscapeMode && (ch == '\"')) {
-                    // next iteration will pick up the comma
-                    fEscapeMode = false;
-                    continue;
+                switch (currentState)
+                {
+                    case SplitState.Start:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.StartQuote;
+                        }
+                        else if (ch == separator)
+                        {
+                            currentState = SplitState.StartSeparator;
+                        }
+                        else if (ch == ' ')
+                        {
+                            currentState = SplitState.PotentialStartSpace;
+                        }
+                        else
+                        {
+                            currentState = SplitState.Word;
+                        }
+                        break;
+                    case SplitState.StartQuote:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.PotentialEndQuote;
+                        }
+                        else
+                        {
+                            currentState = SplitState.EscapedWord;
+                        }
+                        break;
+                    case SplitState.StartSeparator:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.StartQuote;
+                        }
+                        else if (ch == separator)
+                        {
+                            break;
+                        }
+                        else if (ch == ' ') {
+                            currentState = SplitState.PotentialStartSpace;
+                        }
+                        else
+                        {
+                            currentState = SplitState.Word;
+                        }
+                        break;
+                    case SplitState.PotentialStartSpace:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.StartQuote;
+                            sb.Length = 0;
+                        }
+                        else if (ch == separator)
+                        {
+                            currentState = SplitState.StartSeparator;
+                        }
+                        else if (ch != ' ')
+                        {
+                            currentState = SplitState.Word;
+                        }
+                        break;
+                    case SplitState.Word:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.UnescapedQuote;
                 }
-                if (!fEscapeMode && (ch == separator)) {
-                    fEscapeMode = false;
-                    // Terminator
+                        else if (ch == separator)
+                        {
+                            currentState = SplitState.StartSeparator;
+                        }
+                        break;
+                    case SplitState.EscapedWord:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.PotentialEndQuote;
+                        }
+                        break;
+                    case SplitState.PotentialEndQuote:
+                        if (ch == '"')
+                        {
+                            currentState = SplitState.EscapedWord;
+                        }
+                        else if (ch == separator)
+                        {
+                            currentState = SplitState.StartSeparator;
+                        }
+                        else if (ch == ' ')
+                        {
+                            currentState = SplitState.PotentialEndSpace;
+                        }
+                        else
+                        {
+                            currentState = SplitState.UnescapedQuote;
+                        }
+                        break;
+                    case SplitState.PotentialEndSpace:
+                        if (ch == separator)
+                        {
+                            currentState = SplitState.StartSeparator;
+                        }
+                        else if (ch != ' ')
+                        {
+                            currentState = SplitState.UnescapedQuote;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                if (currentState == SplitState.StartSeparator)
+                {
                     string x = sb.ToString();
-                    if (trim) 
-                        x = x.Trim();
+                    if (trim) { x = x.Trim(); }
                     parts.Add(Intern(x));
-
-                    sb.Length = 0; // reset
-
-                    continue;
+                    sb.Length = 0;
                 }
-                if (ch == '\"') {
-                    fEscapeMode = true;
-                    continue;
-                }
+
+                if ((currentState == SplitState.PotentialStartSpace) ||
+                    (currentState == SplitState.Word) ||
+                    (currentState == SplitState.EscapedWord) ||
+                    (currentState == SplitState.PotentialEndSpace))
+                {
                 sb.Append(ch);
             }
-            Utility.Assert(!fEscapeMode, "missing closing quote");
+
+                Utility.Assert(currentState != SplitState.UnescapedQuote, "unescaped double quote");
+                Utility.Assert(currentState != SplitState.MissingEndQuote, "missing closing quote");
+            }
 
             // add leftovers
             string lastItem = sb.ToString();
-            if (trim)
-                lastItem = lastItem.Trim();
+            if (trim) {lastItem = lastItem.Trim();}
             parts.Add(Intern(lastItem));
 
             return parts.ToArray();
