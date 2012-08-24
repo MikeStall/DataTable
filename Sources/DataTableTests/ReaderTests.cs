@@ -1,10 +1,45 @@
 ﻿using DataAccess;
 using Xunit;
+using System.IO;
 
 namespace DataTableTests
 {
     public class ReaderTests
     {
+        [Fact]
+        public void TestSemicolon()
+        {
+            TestDelimeter(';');
+        }
+
+        [Fact]
+        public void TestTab()
+        {
+            TestDelimeter('\t');
+        }
+
+        [Fact]
+        public void TestComma()
+        {
+            TestDelimeter(',');
+        }
+
+        private void TestDelimeter(char ch)
+        {
+            string content =
+@"first{0}last
+Bob{0}Smith";
+            content = string.Format(content, ch);
+
+            TextReader tr = new StringReader(content);
+            MutableDataTable dt = DataTable.New.Read(tr, ch);
+
+            AnalyzeTests.AssertEquals(
+@"first,last
+Bob,Smith
+", dt);
+        }
+
         [Fact]
         public void Split()
         {            
