@@ -81,7 +81,7 @@ namespace DataAccess
         /// ColumnTypes should be types that can be normalized to OData (string,byte,sbyte,i16,i32,i64,double,single,boolean,decimal, datetime, guid).
         /// </param>
         /// <param name="funcComputeKeys">function to compute the partion and row keys for each row. </param>
-        public static void SaveToAzureTable(this DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes, Func<int, Row, ParitionRowKey> funcComputeKeys)
+        public static void SaveToAzureTable(this DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes, Func<int, Row, PartitionRowKey> funcComputeKeys)
         {
             GenericTableWriter.SaveToAzureTable(table, account, tableName, columnTypes, funcComputeKeys);
         }        
@@ -91,7 +91,7 @@ namespace DataAccess
     /// Class to encapsulate a partition and row key. This is similar to Tuple[string,string], but less ambiguous. 
     /// Partition plus Row key must be unique. 
     /// </summary>
-    public class ParitionRowKey
+    public class PartitionRowKey
     {
         /// <summary>
         /// Partition key to use for Azure Table. 
@@ -106,7 +106,7 @@ namespace DataAccess
         /// <summary>
         /// Empty constructor. Set the partition and row key via the properties.
         /// </summary>
-        public ParitionRowKey()
+        public PartitionRowKey()
         { }
 
 
@@ -115,7 +115,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="partitionKey">partition key for azure table row</param>
         /// <param name="rowKey">Row key for azure table row.</param>
-        public ParitionRowKey(string partitionKey, string rowKey)
+        public PartitionRowKey(string partitionKey, string rowKey)
         {
             PartitionKey = partitionKey;
             RowKey = rowKey;
@@ -127,10 +127,30 @@ namespace DataAccess
         /// </summary>
         /// <param name="partitionKey">partition key for azure table row</param>
         /// <param name="rowKey">Row key for azure table row. pad rowkey with 0s so that it sorts nicely. </param>
-        public ParitionRowKey(string partitionKey, int rowKey)            
+        public PartitionRowKey(string partitionKey, int rowKey)            
         {
             PartitionKey = partitionKey;
             RowKey = rowKey.ToString("D8");
+        }
+
+        public override bool Equals(object obj)
+        {
+            PartitionRowKey other = obj as PartitionRowKey;
+            if (other == null)
+            {
+                return false;
+            }
+            return (this.PartitionKey == other.PartitionKey) && (this.RowKey == other.RowKey);
+        }
+
+        public override int GetHashCode()
+        {
+            return RowKey.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0},{1}", PartitionKey, RowKey);
         }
     }
 }

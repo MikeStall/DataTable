@@ -135,7 +135,7 @@ namespace DataAccess
                 throw new ArgumentNullException("filename");
             }
 
-            DataTable source = new StreamingDataTable(filename);
+            DataTable source = new FileStreamingDataTable(filename);
             MutableDataTable dt = Analyze.SampleTopN(source, topN);
             return dt;
         }
@@ -151,7 +151,21 @@ namespace DataAccess
         {
             Debug.Assert(builder != null);
 
-            return new StreamingDataTable(filename) { Name = filename };
+            return new FileStreamingDataTable(filename) { Name = filename };
+        }
+
+        /// <summary>
+        /// Return a streaming data table over a stream. This just reads a row at a time and avoids reading the whole
+        /// table into memory. But it only provides sequential read-only access.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="inputStream">input stream. Must be seekable and readable</param>
+        /// <returns>a streaming data table for the given filename</returns>
+        public static DataTable ReadLazy(this DataTableBuilder builder, Stream inputStream)
+        {
+            Debug.Assert(builder != null);
+
+            return new StreamingDataTable(inputStream);
         }
 
         

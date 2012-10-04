@@ -241,7 +241,7 @@ namespace CsvReader.Azure.Tests
 
             string tableName = "csvtesttable";
 
-            Func<int, Row, ParitionRowKey> explicitFunc = (rowIdx, row) => new ParitionRowKey((rowIdx * 10).ToString(), rowIdx);
+            Func<int, Row, PartitionRowKey> explicitFunc = (rowIdx, row) => new PartitionRowKey((rowIdx * 10).ToString(), rowIdx);
             dtSource.SaveToAzureTable(account, tableName, new Type[] { typeof(int) }, explicitFunc);
 
             DataTable dtFromAzure = DataTable.New.ReadAzureTableLazy(account, tableName);

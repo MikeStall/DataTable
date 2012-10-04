@@ -309,7 +309,8 @@ namespace DataAccess
                 d.Columns[0].Values[i] = row.ToString();
                 for (int ic = 0; ic < columns.Length; ic++)
                 {
-                    d.Columns[ic + 1].Values[i] = dict[row, columns[ic]].ToString();
+                    var x = dict[row, columns[ic]];                    
+                    d.Columns[ic + 1].Values[i] = (x == null) ? string.Empty : x.ToString();
                 }
                 i++;
             }

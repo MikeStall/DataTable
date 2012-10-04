@@ -97,6 +97,30 @@ namespace DataAccess
             }
             return false;
         }
+
+        /// <summary>
+        /// Get the index for the column. This can be used for an optimized column lookup when streaming across rows. 
+        /// </summary>
+        /// <param name="columnName">name of column to look for</param>
+        /// <param name="throwOnMissing">If the column is nmissing, either throw an exception or return index of -1</param>
+        /// <returns></returns>
+        public int GetColumnIndex(string columnName, bool throwOnMissing = true)
+        {
+            int i = 0;
+            foreach (string x in this.ColumnNames)
+            {
+                if (string.Compare(x, columnName, true) == 0)
+                {
+                    return i;
+                }
+                i++;
+            }
+            if (throwOnMissing)
+            {
+                throw new InvalidOperationException("Column '" + columnName + "' is not found.");
+            }
+            return -1;
+        }
                                 
         /// <summary>
         /// Save the table to the given stream, using a CSV format. The first line will be the headers, and then each subsequent line will be a row.

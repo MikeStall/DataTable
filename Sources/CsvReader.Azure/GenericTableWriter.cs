@@ -60,7 +60,7 @@ namespace DataAccess
         }
 
         // Get a function that will determine the partition row key
-        private static Func<int, Row, ParitionRowKey> GetPartitionRowKeyFunc(string[] columnNames)
+        private static Func<int, Row, PartitionRowKey> GetPartitionRowKeyFunc(string[] columnNames)
         { 
             // If incoming table has columns named "PartitionKey" and "RowKey", then use those. 
             int iPartitionKey = GetColumnIndex("PartitionKey", columnNames);
@@ -68,29 +68,29 @@ namespace DataAccess
             if (iPartitionKey >= 0 && iRowKey  >= 0)
             {
                 // Both row and partition key
-                return (rowIndex, row) => new ParitionRowKey(row.Values[iPartitionKey], row.Values[iRowKey]);
+                return (rowIndex, row) => new PartitionRowKey(row.Values[iPartitionKey], row.Values[iRowKey]);
             }
             else if ((iPartitionKey < 0) && (iRowKey >= 0))
             {
                 // Only row Key
-                return (rowIndex, row) => new ParitionRowKey("1", row.Values[iRowKey]);
+                return (rowIndex, row) => new PartitionRowKey("1", row.Values[iRowKey]);
             }
             else if ((iPartitionKey >= 0) && (iRowKey < 0))
             {
                 // Only a partition key
-                return (rowIndex, row) => new ParitionRowKey(row.Values[iPartitionKey], rowIndex);
+                return (rowIndex, row) => new PartitionRowKey(row.Values[iPartitionKey], rowIndex);
             }
             else
             {                    
                 // format rowkey so that when sorted alpanumerically, it's still ascending
-                return (rowIndex, row) => new ParitionRowKey("1", rowIndex);
+                return (rowIndex, row) => new PartitionRowKey("1", rowIndex);
             }            
         }
 
         // Write a DataTable to an AzureTable.
         // DataTable's Rows are an unstructured property bag.
         // columnTypes - type of the column, or null if column should be skipped. Length of columnTypes should be the same as number of columns.
-        public static void SaveToAzureTable(DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes, Func<int, Row, ParitionRowKey> funcComputeKeys)
+        public static void SaveToAzureTable(DataTable table, CloudStorageAccount account, string tableName, Type[] columnTypes, Func<int, Row, PartitionRowKey> funcComputeKeys)
         {
             if (table == null)
             {
@@ -167,6 +167,8 @@ namespace DataAccess
             TableServiceContext ctx = null;
             string lastPartitionKey = null;
 
+            HashSet<PartitionRowKey> dups = new HashSet<PartitionRowKey>();
+
             int rowCounter = 0;
             int batchSize = 0;
             foreach (Row row in table.Rows)
@@ -183,10 +185,11 @@ namespace DataAccess
                 {
                     ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
                     ctx = null;
-                }                
-                
+                }
+
                 if (ctx == null)
                 {
+                    dups.Clear();
                     lastPartitionKey = null;
                     ctx = tableClient.GetDataServiceContext();
                     ctx.WritingEntity += new EventHandler<ReadingWritingEntityEventArgs>(w.ctx_WritingEntity);
@@ -194,13 +197,63 @@ namespace DataAccess
                 }
 
                 // Add enty to the current batch
-                ctx.AddObject(tableName, entity);
+                // Upsert means insert+Replace. But still need uniqueness within a batch.
+                bool allowUpsert = true;
+                
+                // Check for dups within a batch.
+                var key = new PartitionRowKey { PartitionKey = entity.PartitionKey, RowKey = entity.RowKey };
+                bool dupWithinBatch = dups.Contains(key);
+                dups.Add(key);
+
+
+                if (allowUpsert)
+                {
+                    // Upsert allows overwriting existing keys. But still must be unique within a batch.
+                    if (!dupWithinBatch)
+                    {
+                        ctx.AttachTo(tableName, entity);
+                        ctx.UpdateObject(entity);   
+                    }
+                }
+                else
+                {
+                    // AddObject requires uniquess.
+                    if (dupWithinBatch)
+                    {
+                        // Azure REST APIs will give us a horrible cryptic error (400 with no message). 
+                        // Provide users a useful error instead.
+                        throw new InvalidOperationException(string.Format("Table has duplicate keys: {0}", key));
+                    }
+
+                    ctx.AddObject(tableName, entity);
+                }
+                
+
                 lastPartitionKey = entity.PartitionKey;
                 batchSize++;
-                                
-                if (batchSize % 50 == 0)
+
+                if (batchSize % UploadBatchSize == 0)
                 {
-                    ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
+                    // Beware, if keys collide within a batch, we get a very cryptic error and 400.
+                    // If they collide across batches, we get a more useful 409 (conflict). 
+                    try
+                    {
+                        ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
+                    }
+                    catch (DataServiceRequestException de)
+                    {
+                        var e = de.InnerException as DataServiceClientException;
+                        if (e != null)
+                        {
+                            if (e.StatusCode == 409)
+                            {
+                                // Conflict. Duplicate keys. We don't get the specific duplicate key.
+                                // Server shouldn't do this if we support upsert.
+                                // (although an old emulator that doesn't yet support upsert may throw it).
+                                throw new InvalidOperationException(string.Format("Table has duplicate keys. {0}", e.Message));
+                            }
+                        }
+                    }
                     ctx = null;
                 }
             }
@@ -210,6 +263,10 @@ namespace DataAccess
                 ctx.SaveChangesWithRetries(SaveChangesOptions.Batch | SaveChangesOptions.ReplaceOnUpdate);
             }
         }
+
+        // Batches must be < 100. 
+        // Larger batches are more efficient. 
+        private const int UploadBatchSize = 50;
 
         private void ctx_WritingEntity(object sender, ReadingWritingEntityEventArgs args)
         {
