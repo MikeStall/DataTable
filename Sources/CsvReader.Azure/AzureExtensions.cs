@@ -47,14 +47,8 @@ namespace DataAccess
         /// <param name="blobName">blob name</param>
         /// <returns>in-memory mutable datatable from blob</returns>
         public static MutableDataTable ReadAzureBlob(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
-        {            
-            CloudBlob blob = container.GetBlobReference(blobName);
-            if (!Exists(blob))
-            {
-                string containerName = container.Name;
-                string accountName = container.ServiceClient.Credentials.AccountName;
-                throw new FileNotFoundException(string.Format("container.blob {0}.{0} does not exist on the storage account '{2}'", containerName, blobName, accountName));
-            }
+        {
+            CloudBlob blob = GetBlobAndVerify(container, blobName);
 
             // We're returning a MutableDataTable (which is in-memory) anyways, so fine to download into an in-memory buffer.
             // Avoid downloading to a file because Azure nodes may not have a local file resource.
@@ -65,6 +59,52 @@ namespace DataAccess
             dt.Name = container.Name + "." + blobName;
             return dt;
         }
+
+        /// <summary>
+        /// Read a data table from azure blob. This reads streaming. 
+        /// </summary>
+        /// <param name="builder">builder</param>
+        /// <param name="account">azure acount</param>
+        /// <param name="containerName">conatiner name</param>
+        /// <param name="blobName">blob name</param>
+        /// <returns>in-memory mutable datatable from blob</returns>
+        public static DataTable ReadAzureBlobLazy(this DataTableBuilder builder, CloudStorageAccount account, string containerName, string blobName)
+        {
+            CloudBlobContainer container = GetContainer(account, containerName);
+            return ReadAzureBlobLazy(builder, container, blobName);
+        }
+
+        /// <summary>
+        /// Read a data table from azure blob. This reads streaming. 
+        /// </summary>
+        /// <param name="builder">builder</param>
+        /// <param name="container">conatiner</param>
+        /// <param name="blobName">blob name</param>
+        /// <returns>in-memory mutable datatable from blob</returns>
+        public static DataTable ReadAzureBlobLazy(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
+        {
+            CloudBlob blob = GetBlobAndVerify(container, blobName);
+            
+            var stream = blob.OpenRead();
+            var dt = DataTable.New.ReadLazy(stream);
+            
+            dt.Name = container.Name + "." + blobName;
+            return dt;
+        }
+
+
+        private static CloudBlob GetBlobAndVerify(CloudBlobContainer container, string blobName)
+        {
+            CloudBlob blob = container.GetBlobReference(blobName);
+            if (!Exists(blob))
+            {
+                string containerName = container.Name;
+                string accountName = container.ServiceClient.Credentials.AccountName;
+                throw new FileNotFoundException(string.Format("container.blob {0}.{0} does not exist on the storage account '{2}'", containerName, blobName, accountName));
+            }
+            return blob;
+        }
+
 
         internal static CloudBlobContainer GetContainer(CloudStorageAccount account, string containerName)
         {

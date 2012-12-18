@@ -62,8 +62,10 @@ namespace DataAccess
 
                 var x = from o in ctx.CreateQuery<GenericEntity>(_tableName) select o;
 
+                CloudTableQuery<GenericEntity> results = x.AsTableServiceQuery();
+
                 // Convert GenericEntity to Row
-                foreach (GenericEntity entity in x)
+                foreach (GenericEntity entity in results)
                 {
                     string[] values = Array.ConvertAll(_columnNames,
                         columnName =>

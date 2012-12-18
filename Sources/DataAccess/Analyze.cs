@@ -102,6 +102,57 @@ namespace DataAccess
             }
             return writer.CloseAndGetTable(); 
         }
+                
+        /// <summary>
+        /// Merge 2 datatables together assuming no common join key. 
+        /// This will collapse common columns, but keep all rows. 
+        /// This needs to deal with columns being in different orders        
+        /// </summary>
+        /// <param name="tables">set of tables to merge together</param>
+        /// <returns>a merged table. The rows may be in a random order.</returns>
+        public static MutableDataTable Join(IEnumerable<DataTable> tables)
+        {
+            var dict = new Dictionary2d<string, string, string>();
+            int counter = 0;
+            foreach (var dt in tables)
+            {
+                Add(dt, dict, ref counter);
+            }
+
+            var merge = DataTable.New.From2dDictionary(dict);
+
+            // remove extra column that Dict2d added, and reorder to more closely match dataset
+            var mutable = DataTable.New.GetMutableCopy(merge);
+
+            IEnumerable<string> columnNames = new string[0];
+            foreach (var dt in tables)
+            {
+                columnNames = columnNames.Concat(dt.ColumnNames);
+            }
+            var names = columnNames.Distinct(StringComparer.OrdinalIgnoreCase);
+
+            var x = names.ToArray();
+            mutable.KeepColumns(x);
+
+            return mutable;
+        }
+
+        static void Add(DataTable table, Dictionary2d<string, string, string> dict, ref int counter)
+        {
+            foreach (var row in table.Rows)
+            {
+                int i = 0;
+                foreach (var name in row.ColumnNames)
+                {
+                    var value = row.Values[i];
+
+                    dict[counter.ToString(), name] = value;
+                    i++;
+                }
+
+                counter++;
+            }
+        }
 
         // $$$ Clarify - multiple joins (inner, outer, etc)
         

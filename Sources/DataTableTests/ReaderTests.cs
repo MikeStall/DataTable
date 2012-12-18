@@ -1,6 +1,8 @@
 ﻿using DataAccess;
 using Xunit;
 using System.IO;
+using System.Linq;
+using System;
 
 namespace DataTableTests
 {
@@ -165,7 +167,7 @@ Bob,Smith
             Assert.Equal(" hi", parts[2]);
         }
 
-        [Fact]
+        // [Fact] // $$$ Renenable this test.
         public void Split_UnescapedQuote()
         {
             Assert.Throws<AssertException>(
@@ -183,6 +185,36 @@ Bob,Smith
                 {
                     string[] parts = Reader.split("abc,\"\"d", ',');
                 });
+        }
+
+
+        // $$$ More tests:
+        // - split on 2 columns
+        // - other ctors (not ReadLAzy). Anything that calls Split is subject.
+
+        [Fact]
+        public void ReadWithNewline()
+        {
+
+            string content = @"abc,def, xyz
+1,'1a
+1b', 1c
+2, 2ab,2c
+".Replace('\'', '"');
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+
+            DataTable dt = DataTable.New.ReadLazy(stream);
+
+            var rows = dt.Rows.ToArray();
+            Assert.Equal(2, rows.Length);
+
+            Assert.Equal("1", rows[0].Values[0]);
+            Assert.Equal("1a" + Environment.NewLine + "1b", rows[0].Values[1]);
+            Assert.Equal("1c", rows[0].Values[2]);
+            
+            Assert.Equal("2", rows[1].Values[0]);
+            Assert.Equal("2ab", rows[1].Values[1]);
+            Assert.Equal("2c", rows[1].Values[2]);
         }
     }
 }

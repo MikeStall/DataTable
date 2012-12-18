@@ -8,6 +8,8 @@ namespace DataAccess
 
     // General reader utilities. 
     // This is internal. Use the Builder functions to access them.
+    // A CSV description is here:
+    // http://www.creativyst.com/Doc/Articles/CSV/CSV01.htm 
     internal static class Reader
     {
 
@@ -23,7 +25,7 @@ namespace DataAccess
         public static string[] split(string input, char separator) {
             return split(input, separator, true);
         }
-
+        
         private enum SplitState
         {
             Start = 0,
@@ -38,12 +40,14 @@ namespace DataAccess
             MissingEndQuote
         }
         
-        public static string[] split(string input, char separator, bool trim) {
+        public static string[] split(string input, char separator, bool trim) 
+        {
             SplitState currentState = SplitState.Start;
             List<string> parts = new List<string>();
 
             StringBuilder sb = new StringBuilder();
-            foreach (char ch in input) {
+            foreach (char ch in input)
+            {
                 switch (currentState)
                 {
                     case SplitState.Start:
@@ -83,7 +87,8 @@ namespace DataAccess
                         {
                             break;
                         }
-                        else if (ch == ' ') {
+                        else if (ch == ' ')
+                        {
                             currentState = SplitState.PotentialStartSpace;
                         }
                         else
@@ -107,10 +112,12 @@ namespace DataAccess
                         }
                         break;
                     case SplitState.Word:
+                        // Allow quotes in the middle of a word.
+                        // a, b "b", c
                         if (ch == '"')
                         {
-                            currentState = SplitState.UnescapedQuote;
-                }
+                            //currentState = SplitState.UnescapedQuote;
+                        }
                         else if (ch == separator)
                         {
                             currentState = SplitState.StartSeparator;
@@ -167,8 +174,8 @@ namespace DataAccess
                     (currentState == SplitState.EscapedWord) ||
                     (currentState == SplitState.PotentialEndSpace))
                 {
-                sb.Append(ch);
-            }
+                    sb.Append(ch);
+                }
 
                 Utility.Assert(currentState != SplitState.UnescapedQuote, "unescaped double quote");
                 Utility.Assert(currentState != SplitState.MissingEndQuote, "missing closing quote");

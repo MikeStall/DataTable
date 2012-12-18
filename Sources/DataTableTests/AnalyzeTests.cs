@@ -208,5 +208,51 @@ Ed,EDSON,
 ", merge);
 
         }
+
+        [Fact]
+        public void JoinMerge()
+        {
+            MutableDataTable d1 = DataTable.New.Read(new StringReader(
+@"first, last
+Bob, Jones
+Alfred, Smith
+Ed, Edson
+"));
+
+            MutableDataTable d2 = DataTable.New.Read(new StringReader(
+@"last, country
+smith, English
+Piere, French
+Jones, American
+"));
+
+            MutableDataTable merge = Analyze.Join(new DataTable[] { d1, d2 });
+            // Column ordering is same; but rows may be reordered
+
+            AssertEquals(
+@"first,last,country
+Bob,Jones,
+Alfred,Smith,
+Ed,Edson,
+,smith,English
+,Piere,French
+,Jones,American
+", merge);
+
+
+            // Flip order. Columns should be in different order.  
+            MutableDataTable merge2 = Analyze.Join(new DataTable[] { d2, d1 });
+
+            AssertEquals(
+@"last,country,first
+smith,English,
+Piere,French,
+Jones,American,
+Jones,,Bob
+Smith,,Alfred
+Edson,,Ed
+", merge2);
+
+        }
     }
 }

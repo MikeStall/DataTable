@@ -50,11 +50,11 @@ namespace DataAccess
             this.Columns = keep;
         }
 
-        private void VerifyColumnIndex(int index)
+        private void VerifyColumnIndex(int position)
         {
-            if ((index < 0) || (index > this.Columns.Length))
+            if ((position < 0) || (position > this.Columns.Length))
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException("position");
             }
         }
 
@@ -72,6 +72,29 @@ namespace DataAccess
 
             // Column not found
             return null;
+        }
+
+        /// <summary>
+        /// Reorder a column.
+        /// </summary>
+        /// <param name="columnName">name of column</param>
+        /// <param name="position">new position for column</param>
+        /// /// <param name="throwOnMissing">True means throw an exception if the column is missing. Else, nop if the column is missing</param>
+        public void ReorderColumn(string columnName, int position, bool throwOnMissing = true)
+        {
+            int idx = this.GetColumnIndex(columnName, throwOnMissing);
+            if (idx == -1)
+            {
+                return;
+            }
+            VerifyColumnIndex(position);
+            var c = this.Columns[idx];
+
+            List<Column> l = new List<Column>(this.Columns);
+            l.RemoveAt(idx);
+            l.Insert(position, c);
+
+            this.Columns = l.ToArray();
         }
 
         /// <summary>
@@ -190,10 +213,19 @@ namespace DataAccess
         /// </summary>
         /// <param name="oldName">existing column in the table</param>
         /// <param name="newName">new name for the column. Must be a unique name</param>
-        public void RenameColumn(string oldName, string newName) {
+        public void RenameColumn(string oldName, string newName, bool throwOnMissing = true) 
+        {            
             if (!HasColumnName(oldName))
             {
-                throw new InvalidOperationException("Can't rename column '" + oldName + "' because it doesn't exist.");
+                if (throwOnMissing)
+                {
+                    throw new InvalidOperationException("Can't rename column '" + oldName + "' because it doesn't exist.");
+                }
+                else 
+                {
+                    return;
+                }
+
             }
 
             if (Utility.Compare(oldName, newName))
@@ -293,20 +325,38 @@ namespace DataAccess
         /// <summary>
         /// Remove column with the given index
         /// </summary>
-        /// <param name="index">0-based index into column collection</param>
-        public void DeleteColumn(int index)
+        /// <param name="position">0-based index into column collection</param>
+        public void DeleteColumn(int position)
         {
-            VerifyColumnIndex(index);
+            VerifyColumnIndex(position);
 
             List<Column> cs = new List<Column>(this.Columns);
-            cs.RemoveAt(index);
+            cs.RemoveAt(position);
             this.Columns = cs.ToArray();
         }
 
         /// <summary>
-        /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
+        /// Delete columns, ignores any column names that are missing.
         /// </summary>
-        /// <param name="names">names of rows to delete</param>
+        /// <param name="names">names of rows to delete. Ignores if any of the names are missing. </param>
+        public void DeleteColumnsAllowMissing(params string[] names)
+        {
+            // Would have been nice to take an optional thowOnMissing parameter, 
+            // but that would conflict with the names params . 
+            foreach (string name in names)
+            {
+                if (this.HasColumnName(name))
+                {
+                    this.DeleteColumns(name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
+        /// Throws if any of the names are missing. 
+        /// </summary>
+        /// <param name="names">names of rows to delete. Throws if any of the names are missing. </param>
         public void DeleteColumns(params string[] names) {            
             int numColumnsOld = this.Columns.Length;
 

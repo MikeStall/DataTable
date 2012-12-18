@@ -115,16 +115,37 @@ namespace DataAccess
                     string header = sr.ReadLine(); // skip past header
                     char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
 
+                    int illegal = 0;
                     string line;
                     while ((line = sr.ReadLine()) != null)
                     {
-                        string[] parts = Reader.split(line, chSeparator);
-                        if (parts.Length != columnCount)
+                        RowFromStreamingTable row = null;
+                        try
                         {
-                            continue; // skip malformed input
-                        }
 
-                        yield return new RowFromStreamingTable(parts, this);
+                            string[] parts = Reader.split(line, chSeparator);
+                            
+                            // $$$ Major hack for dealing with newlines in quotes strings.
+                            // The better fix here would be to switch to a streaming interface.
+                            if (parts.Length != columnCount)
+                            {
+                                string line2 = sr.ReadLine();
+                                line += Environment.NewLine + line2;
+
+                                parts = Reader.split(line, chSeparator);
+                            }
+
+                            row = new RowFromStreamingTable(parts, this);
+                        }
+                        catch (AssertException)
+                        {
+                            // Something really corrupt about this row. Ignore it. 
+                            illegal++;
+                        }
+                        if (row != null)
+                        {
+                            yield return row;
+                        }
                     }
                 }
                 finally
@@ -134,7 +155,6 @@ namespace DataAccess
                         this.CloseText(sr);
                     }
                 }
-
             }
         }
     }

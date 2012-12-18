@@ -85,7 +85,6 @@ namespace DataTableTests
 
             s.Position = 0; // verify stream is not disposed
             
-        }
-
+        }        
     }
 }

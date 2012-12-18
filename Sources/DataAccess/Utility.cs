@@ -282,8 +282,10 @@ namespace DataAccess
         // TKey1 is rows, TKey1 is columns.
         // Data table column names are obtained from key values.
         // Column 0 is set of row values.
-        internal static MutableDataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict)
+        internal static MutableDataTable ToTable<TKey1, TKey2, TValue>(Dictionary2d<TKey1, TKey2, TValue> dict, string newColumnName = null)
         {
+            newColumnName = newColumnName ?? "row name";
+
             // TKey1 is rows, TKey2 is values.
             MutableDataTable d = new MutableDataTable();
 
@@ -294,7 +296,7 @@ namespace DataAccess
             var columns = dict.Key2.ToArray();
             {
                 Column[] cs = new Column[columns.Length + 1];
-                cs[0] = new Column("row name", count);
+                cs[0] = new Column(newColumnName, count);
                 for (int ic = 0; ic < columns.Length; ic++)
                 {
                     cs[ic + 1] = new Column(columns[ic].ToString(), count);

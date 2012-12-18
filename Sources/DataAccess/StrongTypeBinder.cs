@@ -201,7 +201,7 @@ namespace DataAccess
 
             {
                 // Type converter lookup is slow and can be hoisted in the closure and done statically. 
-                var converter = TypeDescriptor.GetConverter(type);
+                var converter = GetConverter(type);
                 var converterExpr = Expression.Constant(converter); // hoisted
 
                 // compile:
@@ -212,6 +212,42 @@ namespace DataAccess
             }
         }
 
+        // BCL implementation may get wrong converters
+        // It appears to use Type.GetType() to find a converter, and so has trouble looking up converters from different loader contexts.
+        static TypeConverter GetConverter(Type type)
+        {
+            // $$$ There has got to be a better way than this to make TypeConverters work.
+            foreach (TypeConverterAttribute attr in type.GetCustomAttributes(typeof(TypeConverterAttribute), false))
+            {
+                string assemblyQualifiedName = attr.ConverterTypeName;
+                if (!string.IsNullOrWhiteSpace(assemblyQualifiedName))
+                {
+                    // Type.GetType() may fail due to loader context issues.
+                    string assemblyName = type.Assembly.FullName;
+
+                    if (assemblyQualifiedName.EndsWith(assemblyName))
+                    {
+                        int i = assemblyQualifiedName.IndexOf(',');
+                        if (i > 0)
+                        {
+                            string typename = assemblyQualifiedName.Substring(0, i);
+
+                            var a = type.Assembly;
+                            var t2 = a.GetType(typename); // lookup type name relative to the 
+                            if (t2 != null)
+                            {
+                                var instance = Activator.CreateInstance(t2);
+                                return (TypeConverter)instance;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return TypeDescriptor.GetConverter(type);
+        }
+
+        
 
         // Parse a double, handle percents.
         // Return NaN on failure.

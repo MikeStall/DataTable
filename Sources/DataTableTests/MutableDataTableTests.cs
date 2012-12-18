@@ -65,6 +65,33 @@ Jones
 ", dt);
         }
 
+
+        [Fact]
+        public void Reorder()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.ReorderColumn("first", 1);
+
+            AnalyzeTests.AssertEquals(
+@"last,first
+Smith,Bob
+Jones,Fred
+", dt);
+        }
+
+        [Fact]
+        public void ReorderOutOfRange()
+        {
+            MutableDataTable dt = GetTable();
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => dt.ReorderColumn("first", 2));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => dt.ReorderColumn("first", -1));            
+        }
+
         [Fact]
         public void KeepColumnsReorder()
         {
@@ -221,6 +248,22 @@ Fred,Jones
             MutableDataTable dt = GetTable();
 
             dt.RenameColumn("first", "first");
+
+            AnalyzeTests.AssertEquals(
+@"first,last
+Bob,Smith
+Fred,Jones
+", dt);
+        }
+
+
+        [Fact]
+        public void RenameMissing()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.RenameColumn("missing", "FName", throwOnMissing : false);
+            // No change
 
             AnalyzeTests.AssertEquals(
 @"first,last
