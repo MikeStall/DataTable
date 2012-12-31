@@ -216,5 +216,23 @@ Bob,Smith
             Assert.Equal("2ab", rows[1].Values[1]);
             Assert.Equal("2c", rows[1].Values[2]);
         }
+
+       [Fact]
+        public void ReadThrowsAssertExceptionIfAllowMismatchFalseAndLinesContainMismatch()
+        {
+           Assert.Throws<AssertException>(
+              delegate
+              {
+                 string content =
+@"aaa,bbb,ccc,ddd
+111,111,111,111
+222,222,222
+333,333,333,333";
+
+                 var textReader = new StringReader(content);
+
+                 Reader.Read(textReader);
+              });
+        }
     }
 }

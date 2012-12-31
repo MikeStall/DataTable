@@ -298,7 +298,7 @@ namespace DataAccess
                 if (!fAllowMismatch) {
                     // If mismatch allowed, then treat this row as garbage rather
                     // than throw an exception
-                    Utility.Assert(parts.Length == names.Length);
+                    Utility.Assert(parts.Length == names.Length, String.Format("Allow Mismatch is False. Line has incorrect number of parts. Line Number:{0}; Expected:{1}; Actual:{2}", i + 1, names.Length, parts.Length));
                 }
                 for (int c = 0; c < numColumns; c++) {
                     columns[c].Values[row] = parts[c];
