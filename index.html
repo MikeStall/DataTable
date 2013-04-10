@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Datatable : Class library for working with tabular data, especially CSV files" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Datatable</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/MikeStall/DataTable">View on GitHub</a>
+
+          <h1 id="project_title">Datatable</h1>
+          <h2 id="project_tagline">Class library for working with tabular data, especially CSV files</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/MikeStall/DataTable/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/MikeStall/DataTable/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>Hello!</p>
+
+<p>C# project for reading and writing CSVs. </p>
+
+<p>Libaries for easy reading, writing, and manipulation of CSV files. Handles linq, creating tables from IEnumerable, dictionaries, in-memory mutable tables,  streaming through large tables.</p>
+
+<p>It's an easier data table than System.Data.DataTable.</p>
+
+<p>This was extremely handy in a few projects. So I thought I'd put it up on GitHub and polish it up.</p>
+
+<p>A few quick examples:</p>
+
+<div class="highlight"><pre><span class="c1">// Download as CsvTools from Nuget to include in your C# project.</span>
+<span class="k">using</span> <span class="nn">DataAccess</span><span class="p">;</span>
+
+<span class="kt">var</span> <span class="n">dt</span> <span class="p">=</span> <span class="n">DataTable</span><span class="p">.</span><span class="n">New</span><span class="p">.</span><span class="n">ReadCsv</span><span class="p">(</span><span class="n">filename</span><span class="p">);</span> <span class="c1">// load a CSV from disk</span>
+
+<span class="c1">// Linq against the rows</span>
+<span class="kt">var</span> <span class="n">y</span> <span class="p">=</span> <span class="k">from</span> <span class="n">row</span> <span class="k">in</span> <span class="n">dt</span><span class="p">.</span><span class="n">Rows</span> <span class="k">where</span> <span class="n">row</span><span class="p">[</span><span class="s">"N"</span><span class="p">]</span> <span class="p">==</span> <span class="s">"3"</span> 
+        <span class="k">select</span> <span class="n">row</span><span class="p">[</span><span class="s">"NSquared"</span><span class="p">];</span>
+
+<span class="c1">// Linq with strongly-typed parsing, using RowAs&lt;T&gt;() method</span>
+<span class="k">class</span> <span class="nc">Entry</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">N</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">NSquared</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="n">y</span> <span class="p">=</span> <span class="p">(</span><span class="k">from</span> <span class="n">row</span> <span class="k">in</span> <span class="n">dt</span><span class="p">.</span><span class="n">RowsAs</span><span class="p">&lt;</span><span class="n">Entry</span><span class="p">&gt;()</span> 
+         <span class="k">where</span> <span class="n">row</span><span class="p">.</span><span class="n">N</span> <span class="p">==</span> <span class="m">3</span> 
+         <span class="k">select</span> <span class="n">row</span><span class="p">.</span><span class="n">NSquared</span><span class="p">).</span><span class="n">First</span><span class="p">();</span>
+
+
+<span class="c1">// Create a table around an IEnumerable and then save back as a CSV</span>
+<span class="kt">var</span> <span class="n">x</span> <span class="p">=</span> <span class="k">from</span> <span class="n">i</span> <span class="k">in</span> <span class="n">Enumerable</span><span class="p">.</span><span class="n">Range</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">5</span><span class="p">)</span> 
+        <span class="k">select</span> <span class="k">new</span> <span class="p">{</span> <span class="n">N</span> <span class="p">=</span> <span class="n">i</span><span class="p">,</span> <span class="n">NSquared</span> <span class="p">=</span> <span class="n">i</span> <span class="p">*</span> <span class="n">i</span> <span class="p">};</span>
+<span class="n">DataTable</span> <span class="n">dt</span> <span class="p">=</span> <span class="n">DataTable</span><span class="p">.</span><span class="n">New</span><span class="p">.</span><span class="n">FromEnumerable</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="n">dt</span><span class="p">.</span><span class="n">SaveToStream</span><span class="p">(</span><span class="n">Console</span><span class="p">.</span><span class="n">Out</span><span class="p">);</span> <span class="c1">// write back out as a CSV</span>
+
+
+</pre></div>
+
+<p>Also includes support for reading an excel file (.xlsx)</p>
+
+<div class="highlight"><pre>  <span class="kt">var</span> <span class="n">dt</span> <span class="p">=</span> <span class="n">DataTable</span><span class="p">.</span><span class="n">New</span><span class="p">.</span><span class="n">ReadExcel</span><span class="p">(</span><span class="s">@"c:\temp\foo.xlsx"</span><span class="p">);</span>
+  <span class="kt">var</span> <span class="n">names</span> <span class="p">=</span> <span class="k">from</span> <span class="n">row</span> <span class="k">in</span> <span class="n">dt</span><span class="p">.</span><span class="n">Rows</span> 
+              <span class="k">where</span> <span class="kt">int</span><span class="p">.</span><span class="n">Parse</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s">"age"</span><span class="p">])</span> <span class="p">&gt;</span> <span class="m">10</span> 
+              <span class="k">select</span> <span class="n">row</span><span class="p">[</span><span class="s">"Name"</span><span class="p">];</span>
+</pre></div>
+
+<p>See here for more about reading excel: <a href="http://blogs.msdn.com/b/jmstall/archive/2012/04/24/excel-on-azure.aspx">http://blogs.msdn.com/b/jmstall/archive/2012/04/24/excel-on-azure.aspx</a> </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Datatable maintained by <a href="https://github.com/MikeStall">MikeStall</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
