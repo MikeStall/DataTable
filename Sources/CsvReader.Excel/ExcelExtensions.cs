@@ -155,7 +155,8 @@ namespace DataAccess
                 Column[] cs = new Column[columns.Length];                
                 for (int ic = 0; ic < columns.Length; ic++)
                 {
-                    string columnName = dict[0, columns[ic]].ToString(); ;
+                    // fix for empty column name
+                    string columnName = dict[0, columns[ic]] == null ? string.Empty : dict[0, columns[ic]].ToString(); ;
                     cs[ic] = new Column(columnName, count);
                 }
                 d.Columns = cs;
