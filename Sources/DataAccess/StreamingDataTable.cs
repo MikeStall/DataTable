@@ -15,7 +15,9 @@ namespace DataAccess
     {
         readonly Stream _input;
 
-        public StreamingDataTable(Stream input)
+        private readonly string[] _columns;
+
+        public StreamingDataTable(Stream input, string[] columns = null)
         {
             // We could optimize to avoid requiring CanSeek if we failed on attemps
             // to read the the rows multiple times. 
@@ -23,35 +25,95 @@ namespace DataAccess
             {
                 throw new ArgumentException("Input stream must be seekable and readable");
             }
+
             _input = input;
+            this._columns = columns;
         }
 
         protected override TextReader OpenText()
         {
             _input.Position = 0;
-
             
-            return new StreamReader(_input);
+            return new IgnoreFirstReadLineStreamReader(_input, _columns != null);
         }
         protected override void CloseText(TextReader reader)
         {
             // Beware, disposing a StreamReader will get dispose the underlying stream.
             // So just nop here since we don't own the stream.
         }
+        public override IEnumerable<string> ColumnNames
+        {
+            get
+            {
+                return this._columns ?? base.ColumnNames;
+            }
+        }
     }
+
+    internal class IgnoreFirstReadLineStreamReader : StreamReader
+    {
+        private readonly bool ignore;
+
+        private bool ignored;
+
+        private string firstLine;
+
+        public override string ReadLine()
+        {
+            if (ignore && !ignored)
+            {
+                ignored = true;
+                return firstLine = base.ReadLine();
+            }
+
+            if (firstLine != null)
+            {
+                var tmp = firstLine;
+                firstLine = null;
+                return tmp;
+            }
+            return base.ReadLine();
+        }
+
+        public IgnoreFirstReadLineStreamReader(Stream stream, bool ignore = false)
+            :base(stream)
+        {
+            this.ignore = ignore;
+        }
+        public IgnoreFirstReadLineStreamReader(string filename, bool ignore = false)
+            : base(filename)
+        {
+            this.ignore = ignore;
+        }
+    }
+
 
     internal class FileStreamingDataTable : TextReaderDataTable
     {
         private readonly string _filename;
-        
-        public FileStreamingDataTable(string filename)
+
+        private string[] _columns;
+
+        public FileStreamingDataTable(string filename, string[] columns = null)
         {
             _filename = filename;
+            this._columns = columns;
         }
 
         protected override TextReader OpenText()
         {
-            return new StreamReader(_filename);
+            if (_columns == null)
+            {
+                return new StreamReader(_filename);
+            }
+            return new IgnoreFirstReadLineStreamReader(_filename, true);
+        }
+        public override IEnumerable<string> ColumnNames
+        {
+            get
+            {
+                return _columns ?? base.ColumnNames;
+            }
         }
 
         protected override void CloseText(TextReader reader)
@@ -66,7 +128,6 @@ namespace DataAccess
     internal abstract class TextReaderDataTable : DataTable
     {
         private string[] _names;
-
         
         public override IEnumerable<string> ColumnNames
         {
