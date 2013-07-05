@@ -234,5 +234,27 @@ Bob,Smith
                  Reader.Read(textReader);
               });
         }
+
+        [Fact]
+        public void ReadWithDefaultColumnsShouldHandleFirstRowAsRowData()
+        {
+            var lines = new[] { "not,a,row,header", "second,row,is,data", "third,row,is,data" };
+            var content = string.Join("\n", lines);
+            var reader = new StringReader(content);
+            var headers = new[] { "header1", "header2", "header3", "header4" };
+            var data = Reader.Read(reader, defaultColumns: headers);
+
+            Assert.Equal(headers, data.ColumnNames);
+            var enumerator = data.Rows.GetEnumerator();
+            int rowCount = 0;
+            foreach (var expectedRow in lines)
+            {
+                enumerator.MoveNext();
+                var value = string.Join(",", enumerator.Current.Values);
+                Assert.Equal(expectedRow, value);
+                rowCount++;
+            }
+            Assert.Equal(lines.Length, rowCount);
+        }
     }
 }
