@@ -154,11 +154,11 @@ namespace DataAccess
         /// <param name="builder"></param>
         /// <param name="filename">filename of CSV to read</param>
         /// <returns>a streaming data table for the given filename</returns>
-        public static DataTable ReadLazy(this DataTableBuilder builder, string filename)
+        public static DataTable ReadLazy(this DataTableBuilder builder, string filename, string[] columns = null)
         {
             Debug.Assert(builder != null);
 
-            return new FileStreamingDataTable(filename) { Name = filename };
+            return new FileStreamingDataTable(filename, columns) { Name = filename };
         }
 
         /// <summary>
@@ -168,11 +168,11 @@ namespace DataAccess
         /// <param name="builder"></param>
         /// <param name="inputStream">input stream. Must be seekable and readable</param>
         /// <returns>a streaming data table for the given filename</returns>
-        public static DataTable ReadLazy(this DataTableBuilder builder, Stream inputStream)
+        public static DataTable ReadLazy(this DataTableBuilder builder, Stream inputStream, string[] columns = null)
         {
             Debug.Assert(builder != null);
 
-            return new StreamingDataTable(inputStream);
+            return new StreamingDataTable(inputStream, columns);
         }
 
         

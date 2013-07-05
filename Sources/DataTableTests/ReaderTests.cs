@@ -234,7 +234,6 @@ Bob,Smith
                  Reader.Read(textReader);
               });
         }
-
         [Fact]
         public void ReadWithDefaultColumnsShouldHandleFirstRowAsRowData()
         {
@@ -254,7 +253,91 @@ Bob,Smith
                 Assert.Equal(expectedRow, value);
                 rowCount++;
             }
+
             Assert.Equal(lines.Length, rowCount);
+        }
+
+    
+        [Fact]
+        public void ReadFromStreamWithDefaultColumnsShouldHandleFirstRowAsRowData()
+        {
+            DataTableBuilder builder = new DataTableBuilder();
+            var stream = new MemoryStream();
+            var sw = new StreamWriter(stream);
+            var rows = new[] { "first,row,is,data", "second,row,is,johnny", "second,row,was,laura", };
+            foreach (var row in rows)
+            {
+                sw.WriteLine(row);
+            }
+
+            sw.Flush();
+            stream.Seek(0, SeekOrigin.Begin);
+            try
+            {
+                var lazy = builder.ReadLazy(stream, rows[0].Split(','));
+                Assert.Equal(rows[0].Split(','), lazy.ColumnNames);
+                var rowEnumerator = rows.Skip(0).GetEnumerator();
+                rowEnumerator.MoveNext();
+                var rowCount = 0;
+                foreach (var row in lazy.Rows)
+                {
+                    Assert.Equal(rowEnumerator.Current, string.Join(",", row.Values));
+                    rowEnumerator.MoveNext();
+                    rowCount++;
+                }
+
+                Assert.Equal(rows.Length, rowCount);
+            }
+            finally
+            {
+                sw.Dispose();
+                stream.Dispose();
+            }
+        }
+
+        [Fact]
+        public void ReadFromTextReaderWithDefaultColumnsShouldHandleFirstRowAsRowData()
+        {
+            // arrange
+            var tmpFile = Path.GetTempFileName();
+
+            var rows = new[] { "first,row,is,data", "second,row,is,johnny", "second,row,was,laura", };
+            
+            using (var sw = new StreamWriter(tmpFile))
+            {
+                foreach (var row in rows)
+                {
+                    sw.WriteLine(row);
+                }
+
+                sw.Flush();
+            }
+
+            // act
+            try
+            {
+                var builder = new DataTableBuilder();
+                var lazy = builder.ReadLazy(tmpFile, rows[0].Split(','));
+                Assert.Equal(rows[0].Split(','), lazy.ColumnNames);
+                var rowEnumerator = rows.Skip(0).GetEnumerator();
+                rowEnumerator.MoveNext();
+                var rowCount = 0;
+
+                // assert
+                foreach (var row in lazy.Rows)
+                {
+                    Assert.Equal(rowEnumerator.Current, string.Join(",", row.Values));
+                    rowEnumerator.MoveNext();
+                    rowCount++;
+                }
+
+                Assert.Equal(rows.Length, rowCount);
+            }
+            finally
+            {
+                // cleanup
+                File.Delete(tmpFile);
+            }
         }
     }
 }
