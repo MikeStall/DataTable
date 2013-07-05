@@ -73,6 +73,11 @@ namespace DataAccess
             return Read(builder, stream, ',');
         }
 
+        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, string[] columns)
+        {
+            return Reader.Read(stream, ',', columns);
+        }
+
         /// <summary>
         /// Read a table from the stream into memory. 
         /// Infer the schema from the header row. Biased to CSV, but may handle tab delimeters too. 
@@ -91,6 +96,8 @@ namespace DataAccess
 
             return Reader.Read(stream, delimiter);
         }
+
+
 
         /// <summary>
         /// Gets a mutable in-memory copy of the given data table.

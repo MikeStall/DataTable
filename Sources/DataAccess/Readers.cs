@@ -217,10 +217,10 @@ namespace DataAccess
             }   
         }
 
-        public static MutableDataTable Read(TextReader stream, char delimiter = '\0')
+        public static MutableDataTable Read(TextReader stream, char delimiter = '\0', string[] defaultColumns = null)
         {
             IList<string> lines = ReadAllLines(stream);
-            return ReadArray(lines, delimiter, false);      
+            return ReadArray(lines, delimiter, false, defaultColumns);
         }
 
         public static char GuessSeparateFromHeaderRow(string header)
@@ -248,38 +248,50 @@ namespace DataAccess
         // Read in a Ascii file that uses the given separate characters.
         // Like CSV. 
         // Supports quotes to escape commas
-        public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false) 
+        public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false, string[] defaultColumns = null)
         {
             var lines = File.ReadAllLines(filename);
-            MutableDataTable dt = ReadArray(lines, separator, fAllowMismatch);
+            MutableDataTable dt = ReadArray(lines, separator, fAllowMismatch, defaultColumns);
             dt.Name = filename;
             return dt;
         }
 
-        private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false)
+
+        private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false, string[] defaultColumns = null)
         {
             if (separator == '\0')
             {
                 separator = GuessSeparateFromHeaderRow(lines[0]);
             }
 
-            int numRows = lines.Count - 1;
-            // First row is a header
+            int numRows = lines.Count - (defaultColumns != null ? 0 : 1);
+            // First row is a header only if we dont pass defaultColumns
 
-            string[] names = split(lines[0], separator);
+            // if defaultColumns is not null then we use them as columns
+            string[] names = defaultColumns ?? split(lines[0], separator);
 
             int numColumns = names.Length;
 
             var columns = new Column[numColumns];
             for (int i = 0; i < numColumns; i++) {
                 columns[i] = new Column(names[i], numRows);
-
             }
 
             // Parse each row into data set
-            for (int i = 1; i < lines.Count; i++) {
-                string line = lines[i];
-                int row = i - 1;
+            using (var lineEnumerator = lines.GetEnumerator())
+            {
+                if (defaultColumns == null)
+                {
+                    lineEnumerator.MoveNext(); // in this case we have columns at first index
+                }
+                var row = -1;
+
+                while(lineEnumerator.MoveNext())
+                {
+                    string line = lineEnumerator.Current;
+
+                    row++;
+
                 string[] parts = split(line, separator);
 
                 if (parts.Length < numColumns) {
@@ -303,11 +315,18 @@ namespace DataAccess
                 if (!fAllowMismatch) {
                     // If mismatch allowed, then treat this row as garbage rather
                     // than throw an exception
-                    Utility.Assert(parts.Length == names.Length, String.Format("Allow Mismatch is False. Line has incorrect number of parts. Line Number:{0}; Expected:{1}; Actual:{2}", i + 1, names.Length, parts.Length));
+                        Utility.Assert(
+                            parts.Length == names.Length,
+                            String.Format(
+                                "Allow Mismatch is False. Line has incorrect number of parts. Line Number:{0}; Expected:{1}; Actual:{2}",
+                                row + 1,
+                                names.Length,
+                                parts.Length));
                 }
                 for (int c = 0; c < numColumns; c++) {
                     columns[c].Values[row] = parts[c];
                 }
+            }
             }
 
             MutableDataTable data = new MutableDataTable();
@@ -317,12 +336,4 @@ namespace DataAccess
             return data;
         }
     }
-        
-
-      
-
-
-
-
-
 }
