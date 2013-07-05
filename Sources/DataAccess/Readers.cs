@@ -288,11 +288,16 @@ namespace DataAccess
                     for (int c = 0; c < parts.Length; c++) {
                         columns[c].Values[row] = parts[c];
                     }
-                    for (int c = parts.Length; c < numColumns; c++) {
+
+                        if (fAllowMismatch)
+                        {
+                            for (int c = parts.Length; c < numColumns; c++)
+                            {
                         columns[c].Values[row] = String.Empty;
                     }
-
                     continue;
+                }
+
                 }
 
                 if (!fAllowMismatch) {
