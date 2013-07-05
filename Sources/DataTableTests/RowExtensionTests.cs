@@ -8,6 +8,9 @@ using System.IO;
 
 namespace DataTableTests
 {
+    using System.Globalization;
+    using System.Threading;
+
     class Customer
     {
         public string Name { get; set; }
@@ -90,6 +93,9 @@ namespace DataTableTests
         [Fact]
         public void ConvertDouble()
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-US");
+
             DateTime d = new DateTime(1990, 1, 2);
 
             Func<string, Row> fpMake = input => new MockRow(new Dictionary<string, string> { 
