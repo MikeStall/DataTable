@@ -203,6 +203,14 @@ namespace DataAccess
             return ReadArray(lines, ',', false);            
         }
 
+        private static IList<string> ReadAllLines(string filename)
+        {
+            using (TextReader tr = new StreamReader(filename))
+            {
+                return ReadAllLines(tr);
+            }
+        }
+
         private static IList<string> ReadAllLines(TextReader stream)
         {
             List<string> lines = new List<string>();
@@ -212,6 +220,13 @@ namespace DataAccess
                 if (line == null)
                 {
                     return lines;
+                }
+
+                // Some CSVs have blank links, like "\r\r\n" as a line terminator. 
+                // Ignore the extra blank,.
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
                 }
                 lines.Add(line);
             }   
@@ -250,7 +265,7 @@ namespace DataAccess
         // Supports quotes to escape commas
         public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false, string[] defaultColumns = null)
         {
-            var lines = File.ReadAllLines(filename);
+            var lines = ReadAllLines(filename);
             MutableDataTable dt = ReadArray(lines, separator, fAllowMismatch, defaultColumns);
             dt.Name = filename;
             return dt;
