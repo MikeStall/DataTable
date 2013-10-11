@@ -144,6 +144,7 @@ namespace DataAccess
         /// <param name="outputFilename">filename on disk to save to.</param>
         public void SaveCSV(string outputFilename)
         {
+            Utility.EnsureDirExistsForFile(outputFilename);
             using (StreamWriter sw = new StreamWriter(outputFilename))
             {
                 SaveToStream(sw);

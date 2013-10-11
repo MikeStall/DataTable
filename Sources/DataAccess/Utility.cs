@@ -128,7 +128,7 @@ namespace DataAccess
             // $$$ How to infer column names?
             // Flatten doesn't have a definitive order.
             // If we had more smart collections, we could infer. 
-
+            
             var items = a.ToList();
             int count = items.Count();
 
@@ -329,6 +329,15 @@ namespace DataAccess
                 i++;
             }
             throw new InvalidOperationException("No column named '" + columnName + "'");
+        }
+
+        public static void EnsureDirExistsForFile(string filename)
+        {
+            var dir = Path.GetDirectoryName(filename);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
         }
     }    
 }

@@ -168,18 +168,27 @@ namespace DataAccess
             {
                 int columnCount = this.ColumnNames.Count();
                 TextReader sr = null;
-
+                
                 try
                 {
                     sr = this.OpenText();
+
+                    StreamReader underlyingStream = sr as StreamReader;
 
                     string header = sr.ReadLine(); // skip past header
                     char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
 
                     int illegal = 0;
+                    long offsetOld = -1;
+
                     string line;
                     while ((line = sr.ReadLine()) != null)
                     {
+                        if (underlyingStream != null)
+                        {
+                            offsetOld = underlyingStream.BaseStream.Position;
+                        }
+
                         RowFromStreamingTable row = null;
                         try
                         {
@@ -206,6 +215,14 @@ namespace DataAccess
                         if (row != null)
                         {
                             yield return row;
+                        }
+
+                        if (underlyingStream != null)
+                        {
+                            if (underlyingStream.BaseStream.Position != offsetOld)
+                            {
+                                underlyingStream.DiscardBufferedData();
+                            }
                         }
                     }
                 }

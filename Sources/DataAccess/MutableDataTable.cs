@@ -123,6 +123,20 @@ namespace DataAccess
         }
 
         /// <summary>
+        /// Create a new column at the end of the table, with empty initial values. 
+        /// </summary>
+        /// <param name="newColumnName">Name of the new column</param>
+        /// <returns>returns newly created column</returns>
+        public Column CreateColumn(string newColumnName)
+        {
+            int numRows = this.NumRows;
+            Column cNew = new Column(newColumnName, numRows);
+
+            AddColumnLast(cNew);
+            return cNew;
+        }
+
+        /// <summary>
         /// Create a new column at the end of the table, and initialize the values for each row using the supplied function.
         /// </summary>
         /// <param name="newColumnName">Name of the new column</param>
@@ -130,8 +144,7 @@ namespace DataAccess
         /// <returns>returns newly created column</returns>
         public Column CreateColumn(string newColumnName, Func<Row, string> fpComputeNewValue)
         {
-            int numRows = this.NumRows;
-            Column cNew = new Column(newColumnName, numRows);
+            Column cNew = CreateColumn(newColumnName);
 
             int iRow = 0;
             foreach (Row row in this.Rows)
@@ -140,8 +153,6 @@ namespace DataAccess
                 cNew.Values[iRow] = newValue;
                 iRow++;
             }
-
-            AddColumnLast(cNew);
 
             return cNew;
         }
@@ -207,7 +218,7 @@ namespace DataAccess
 
             return c;
         }
-
+        
         /// <summary>
         /// rename a column from an old name to the new name 
         /// </summary>

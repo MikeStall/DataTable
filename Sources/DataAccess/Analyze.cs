@@ -25,7 +25,7 @@ namespace DataAccess
         /// <param name="columnName">column name to use for shredding. You can use <see cref="GetColumnValueCounts"/>
         /// to see the variation in each column to determine a good column to use for shredding.
         /// </param>    
-        public static void Shred(DataTable table, string columnName, Func<string, TextWriter> funcCreateStream)
+        public static void Shred(this DataTable table, string columnName, Func<string, TextWriter> funcCreateStream)
         {
             Dictionary<string, TextWriter> dict = new Dictionary<string, TextWriter>();
 
@@ -66,12 +66,13 @@ namespace DataAccess
         /// to see the variation in each column to determine a good column to use for shredding.
         /// </param>
         /// <param name="templateFilename">template specifying filename of shredded files.</param>
-        public static void Shred(DataTable table, string columnName, string templateFilename)
+        public static void Shred(this DataTable table, string columnName, string templateFilename)
         {
             Func<string, TextWriter> func =
                 (value) =>
                 {
                     string destination = string.Format(templateFilename, value);
+                    Utility.EnsureDirExistsForFile(destination);
                     TextWriter tw = new StreamWriter(destination);
                     return tw;
                 };
@@ -86,7 +87,7 @@ namespace DataAccess
         /// <param name="table">source table</param>
         /// <param name="fpSelector">predicate to execute on each row</param>
         /// <returns>a new table that copies out rows from from the source table</returns>
-        public static DataTable Where(DataTable table, Func<Row, bool> fpSelector)
+        public static DataTable Where(this DataTable table, Func<Row, bool> fpSelector)
         {
             TableWriter writer = new TableWriter(table);
 
@@ -294,7 +295,7 @@ namespace DataAccess
         /// <param name="table">source table</param>
         /// <param name="topN">positive value specifying number of rows to copy from from source table</param>
         /// <returns>The topN rows from the source table.</returns>
-        public static MutableDataTable SampleTopN(DataTable table, int topN)
+        public static MutableDataTable SampleTopN(this DataTable table, int topN)
         {
             if (topN <= 0)
             {
@@ -339,7 +340,7 @@ namespace DataAccess
         /// <param name="table">source table</param>
         /// <param name="columnName">column within short table</param>
         /// <returns>collection of tuples, where each tuple is a value and the count of that value within the column</returns>
-        public static Tuple<string, int>[] AsHistogram(DataTable table, string columnName)
+        public static Tuple<string, int>[] AsHistogram(this DataTable table, string columnName)
         {
             int i = GetColumnIndexFromName(table, columnName);
             return AsHistogram(table, i);
@@ -352,7 +353,7 @@ namespace DataAccess
         /// <param name="table">source table</param>
         /// <param name="columnIdx">0-based index of column </param>
         /// <returns>collection of tuples, where each tuple is a value and the count of that value within the column</returns>
-        public static Tuple<string, int>[] AsHistogram(DataTable table, int columnIdx)
+        public static Tuple<string, int>[] AsHistogram(this DataTable table, int columnIdx)
         {
             Dictionary<string, int> values = new Dictionary<string, int>();
 
@@ -393,7 +394,7 @@ namespace DataAccess
         /// <param name="table">source table</param>
         /// <param name="N">number of top N occurences to include in the summary table </param>
         /// <returns>a summary table</returns>
-        public static MutableDataTable GetColumnValueCounts(DataTable table, int N)
+        public static MutableDataTable GetColumnValueCounts(this DataTable table, int N)
         {
             if (N < 0)
             {
@@ -451,7 +452,7 @@ namespace DataAccess
         /// <param name="table">original table</param>
         /// <param name="columnNames">set of columns to compare to look for duplicates</param>
         /// <returns>a table that's a subset of the original table</returns>
-        public static DataTable SelectDuplicates(DataTable table, params string[] columnNames)
+        public static DataTable SelectDuplicates(this DataTable table, params string[] columnNames)
         {
 
 
