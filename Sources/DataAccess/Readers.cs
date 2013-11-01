@@ -267,6 +267,11 @@ namespace DataAccess
             {
                 return ';';
             }
+
+            if (header.Contains("|"))
+            {
+                return '|';
+            }
             
             // Fallback is always comma. This implies a single column. 
             return ',';

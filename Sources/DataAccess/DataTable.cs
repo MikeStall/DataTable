@@ -40,6 +40,7 @@ namespace DataAccess
         /// <summary>
         /// Enumeration of rows as strongly types. The default implementation here is 
         /// to just to parse the results of <see cref="Rows"/>.
+        /// This skips any rows that throw a parse execption. 
         /// </summary>
         /// <typeparam name="T">Target object type to parse.</typeparam>
         /// <returns>enumeration of rows as strongly typed object</returns>
@@ -60,8 +61,20 @@ namespace DataAccess
             }
 
             // Use the local parser function, not the field, in case the field is switched on us by another thread.
-            var result = from row in Rows select parser(row);
+            var result = from row in Rows let parsedRow = ParseWrapper(parser, row) where (parsedRow != null) select parsedRow;
             return result;
+        }
+
+        static T ParseWrapper<T>(Func<Row, T> parser, Row row) where T : class, new()
+        {
+            try
+            {
+                return parser(row);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         // Cache the parser function. 

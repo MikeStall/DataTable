@@ -339,5 +339,14 @@ namespace DataAccess
                 Directory.CreateDirectory(dir);
             }
         }
-    }    
+    }
+
+    public static class DataTableExtensions
+    {
+        // All strings become upper case (for comparison)
+        public static IDictionary<TKey, TValue> ToDictionary<TKey, TValue>(this MutableDataTable table, string keyName, string valueName)
+        {
+            return Utility.ToDict<TKey, TValue>(table, keyName, valueName);
+        }
+    }
 }

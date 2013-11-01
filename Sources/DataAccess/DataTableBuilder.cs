@@ -93,6 +93,19 @@ namespace DataAccess
             return Reader.Read(stream, delimiter);
         }
 
+        // Some files leave the last comma off if the value is empty
+        // AllowMismatch = true means being tolerant to that.         
+        public static MutableDataTable Read(this DataTableBuilder builder, string filename, char delimiter, bool allowMismatch)
+        {
+            Debug.Assert(builder != null);
+            if (filename== null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
+            return Reader.Read(filename, delimiter, allowMismatch, null);
+        }
+
         /// <summary>
         /// Create a csv based on the text provided in a string
         /// </summary>
@@ -111,6 +124,7 @@ namespace DataAccess
 
             return Reader.ReadString(text, newLine);
         }
+
 
         /// <summary>
         /// Gets a mutable in-memory copy of the given data table.

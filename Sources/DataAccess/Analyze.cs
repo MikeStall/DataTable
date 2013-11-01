@@ -12,7 +12,57 @@ namespace DataAccess
     /// These handle large tables.
     /// </summary>
     public static class Analyze
-    {  
+    {
+        /// <summary>
+        /// Sort a mutable datatable in place by the given column. 
+        /// </summary>
+        /// <param name="dt">dat table to sort</param>
+        /// <param name="columnName">column name to sort on. Throws if missing</param>
+        public static void Sort(this MutableDataTable dt, string columnName)
+        {
+            Sort(dt, columnName, StringComparer.InvariantCultureIgnoreCase);
+        }
+
+        /// <summary>
+        /// Sort a mutable datatable in place by the given column. 
+        /// </summary>
+        /// <param name="dt">dat table to sort</param>
+        /// <param name="columnName">column name to sort on. Throws if missing</param>
+        /// <param name="comparer">Comparer to use on column name</param>
+        public static void Sort(this MutableDataTable dt, string columnName, IComparer<string> comparer)
+        {
+            if (comparer == null)
+            {
+                throw new ArgumentNullException("comparer");
+            }
+            var column = dt.GetColumn(columnName, throwOnMissing: true);
+
+            int len = column.Values.Length;
+            int[] map = new int[len];
+            for (int i = 0; i < len; i++)
+            {
+                map[i] = i;
+            }
+
+            Array.Sort(column.Values, map, comparer);
+
+            // Sort other columns for consistency
+            foreach (var c in dt.Columns)
+            {
+                if (c == column)
+                {
+                    continue;
+                }
+
+                string[] newVals = new string[len];
+                for (int i = 0; i < len; i++)
+                {
+                    newVals[i] = c.Values[map[i]];
+                }
+                c.Values = newVals;
+            }
+        }
+
         /// <summary>
         /// Given a potentially extremely large table, shred it into smaller CSV files based on the values in columnName.
         /// This can be very useful for easily building an index for a large file. 

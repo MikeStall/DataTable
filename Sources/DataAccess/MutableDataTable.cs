@@ -62,14 +62,20 @@ namespace DataAccess
         /// Case-insensitive name lookup of a column. 
         /// </summary>
         /// <param name="name">name of column to look for</param>
+        /// <param name="throwOnMissing">determines behavior when the column name is not found. </param>
         /// <returns>null if column is not found</returns>
-        public Column GetColumn(string name) {
+        public Column GetColumn(string name, bool throwOnMissing = false)
+        {
             foreach (var c in this.Columns) {
                 if (string.Compare(c.Name, name, true) == 0) {
                     return c;
                 }
             }
 
+            if (throwOnMissing)
+            {
+                throw new ArgumentException("Column '" + name + "' is not found.");
+            }
             // Column not found
             return null;
         }

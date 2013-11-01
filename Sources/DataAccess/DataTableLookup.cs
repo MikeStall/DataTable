@@ -33,7 +33,9 @@ namespace DataAccess
         public static DataTableLookup BuildFromDataTable(string file, string columnNameToIndex)
         {
             var dtl = new DataTableLookup();
-            dtl._input = new FileStream(file, FileMode.Open);
+
+            // Share, we don't want multiple indexes to block each other. 
+            dtl._input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             dtl.BuildMap(columnNameToIndex); // This will read the stream
             dtl._input.Position = 0;
 
