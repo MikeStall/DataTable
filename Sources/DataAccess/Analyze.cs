@@ -190,10 +190,11 @@ namespace DataAccess
 
         static void Add(DataTable table, Dictionary2d<string, string, string> dict, ref int counter)
         {
+            var names = (from name in table.ColumnNames select name.ToLowerInvariant()).ToArray();
             foreach (var row in table.Rows)
             {
                 int i = 0;
-                foreach (var name in row.ColumnNames)
+                foreach (var name in names)
                 {
                     var value = row.Values[i];
 

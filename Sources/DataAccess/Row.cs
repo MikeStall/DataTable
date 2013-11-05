@@ -30,6 +30,17 @@ namespace DataAccess
         }
 
         /// <summary>
+        /// Return a fast compiled function that parses rows into a strongly typed object. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnNames">column names that will correspond to the row.</param>
+        /// <returns>the parsing function</returns>
+        public static Func<Row, T> BuildMethod<T>(IEnumerable<string> columnNames)
+        {
+            return StrongTypeBinder.BuildMethod<T>(columnNames);
+        }
+
+        /// <summary>
         /// Debug helper to show all values.
         /// </summary>
         public string[] DebugValues

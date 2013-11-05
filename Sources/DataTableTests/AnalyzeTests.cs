@@ -179,6 +179,62 @@ Bob,Jones,34
         }
 
         [Fact]
+        public void Sort()
+        {
+            MutableDataTable d1 = DataTable.New.Read(new StringReader(
+@"first, Last
+Bob, Jones
+Alfred, Smith
+Ed, Edson
+"));
+            d1.Sort("first");
+            AssertEquals(
+@"first,Last
+Alfred,Smith
+Bob,Jones
+Ed,Edson
+", d1);
+            d1.Sort("last");
+            AssertEquals(
+@"first,Last
+Ed,Edson
+Bob,Jones
+Alfred,Smith
+", d1);
+        }
+
+        [Fact]
+        public void SortMissingColumn()
+        {
+            MutableDataTable d1 = DataTable.New.Read(new StringReader(
+@"first, Last
+Bob, Jones
+Alfred, Smith
+Ed, Edson
+"));
+
+            Assert.Throws<ArgumentException>(
+                () => d1.Sort("missing"));
+
+            Assert.Throws<ArgumentException>(
+             () => d1.Sort(null));
+        }
+
+        [Fact]
+        public void SortMissingComparer()
+        {
+            MutableDataTable d1 = DataTable.New.Read(new StringReader(
+@"first, Last
+Bob, Jones
+Alfred, Smith
+Ed, Edson
+"));
+
+            Assert.Throws<ArgumentNullException>(
+                () => d1.Sort("first", null));
+        }
+
+        [Fact]
         public void Join()
         {            
             MutableDataTable d1 = DataTable.New.Read(new StringReader(
@@ -213,7 +269,7 @@ Ed,EDSON,
         public void JoinMerge()
         {
             MutableDataTable d1 = DataTable.New.Read(new StringReader(
-@"first, last
+@"first, Last
 Bob, Jones
 Alfred, Smith
 Ed, Edson
@@ -226,11 +282,13 @@ Piere, French
 Jones, American
 "));
 
+            // Not case difference in column names (Last vs Last)
+
             MutableDataTable merge = Analyze.Join(new DataTable[] { d1, d2 });
             // Column ordering is same; but rows may be reordered
 
             AssertEquals(
-@"first,last,country
+@"first,Last,country
 Bob,Jones,
 Alfred,Smith,
 Ed,Edson,

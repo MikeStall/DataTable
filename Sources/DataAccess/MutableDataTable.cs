@@ -45,6 +45,7 @@ namespace DataAccess
                 {
                     throw new InvalidOperationException("No column named:" + name);
                 }
+                keep[i].Name = name; // Normalize names.
                 
             }
             this.Columns = keep;
@@ -230,7 +231,11 @@ namespace DataAccess
         /// </summary>
         /// <param name="oldName">existing column in the table</param>
         /// <param name="newName">new name for the column. Must be a unique name</param>
+<<<<<<< HEAD
         /// <param name="throwOnMissing">should an exception be thrown if the column is not in the table</param>
+=======
+        /// <remarks>This can also be used to change casing on a column.</remarks>
+>>>>>>> f92571d... Better column case handling
         public void RenameColumn(string oldName, string newName, bool throwOnMissing = true) 
         {            
             if (!HasColumnName(oldName))
@@ -246,14 +251,13 @@ namespace DataAccess
 
             }
 
-            if (Utility.Compare(oldName, newName))
-            {
-                return;
-            }
-
             if (HasColumnName(newName))
             {
-                throw new InvalidOperationException("Can't rename column to '" + newName + "' because there's an existing column with that name.");
+                // If we're renaming an exisitng column to itself, assume we're just normalizing casing. 
+                if (!Utility.Compare(oldName, newName))
+                {
+                    throw new InvalidOperationException("Can't rename column to '" + newName + "' because there's an existing column with that name.");
+                }
             }
 
             var c = GetColumn(oldName);

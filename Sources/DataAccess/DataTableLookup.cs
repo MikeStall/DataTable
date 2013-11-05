@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace DataAccess
 {
+    public interface IDataTableLookup
+    {
+        Row LookupRow(string key);
+    }
+
+
     // Provide a fast lookup over a datatable.
     // Index is in-memory
     // This can be useful for tables that are larger than memory
@@ -69,7 +76,8 @@ namespace DataAccess
             }
 
             // SortedList is more memory effecient.
-            _mapping = new SortedList<string, long>(d);
+            //_mapping = new SortedList<string, long>(d); // Can take 35 seconds on large file
+            _mapping = d;
         }
 
         // $$$ Should be shared somewhere. 
@@ -194,21 +202,14 @@ namespace DataAccess
 
             return val;
         }
-    }
 
-    public interface IDataTableLookup
-    {
-        Row LookupRow(string key);
-    }
-
-    // $$$ Is TKey just ToString?
-    public interface IDataTableLookup<TKey>
-    {
-        Row LookupRow(TKey key);
-    }
-
-    public interface IDataTableLookup<TKey, TRow>
-    {
-        TRow LookupRow(TKey key);
+        // If an object exposes rows, then it needs to expose column names for consistency.
+        public IList<string> ColumnNames
+        {
+            get
+            {
+                return new ReadOnlyCollection<string>(this._headers);
+            }
+        }
     }
 }

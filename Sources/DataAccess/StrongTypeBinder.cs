@@ -15,7 +15,7 @@ namespace DataAccess
     internal class StrongTypeBinder
     {
         // Map from type property names to column names.
-        public static Type[] GetTypes(Type target, DataTable table)
+        internal static Type[] GetTypes(Type target, DataTable table)
         {
             string[] columnNamesNormalized = table.ColumnNames.ToArray();
             Type[] types = new Type[columnNamesNormalized.Length];
