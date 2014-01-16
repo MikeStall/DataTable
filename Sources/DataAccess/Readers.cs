@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+
 
 namespace DataAccess
 {
@@ -225,24 +227,15 @@ namespace DataAccess
 
         public static char GuessSeparateFromHeaderRow(string header)
         {
-            if (header.Contains("\t"))
-            {
-                return '\t';
-            }
+            var validSeparators = new[] { '\t', ',', ';' };
+                    
+            var firstSeparator =
+            (from x in validSeparators.Select(c => new { separator = c, index = header.IndexOf(c) })
+            where x.index >= 0
+            orderby x.index
+            select x.separator).ToList();
 
-            if (header.Contains(","))
-            {
-                return ',';
-            }
-
-            if (header.Contains(";"))
-            {
-                return ';';
-            }
-            
-            // Fallback is always comma. This implies a single column. 
-            return ',';
-            
+            return firstSeparator.Any() ? firstSeparator.FirstOrDefault() : ',';
         }
 
         // Read in a Ascii file that uses the given separate characters.
