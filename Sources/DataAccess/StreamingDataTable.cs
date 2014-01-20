@@ -15,7 +15,8 @@ namespace DataAccess
     {
         readonly Stream _input;
 
-        public StreamingDataTable(Stream input)
+        public StreamingDataTable(Stream input, char columnSeparator)
+            : base(columnSeparator)
         {
             // We could optimize to avoid requiring CanSeek if we failed on attemps
             // to read the the rows multiple times. 
@@ -30,7 +31,7 @@ namespace DataAccess
         {
             _input.Position = 0;
 
-            
+
             return new StreamReader(_input);
         }
         protected override void CloseText(TextReader reader)
@@ -43,8 +44,9 @@ namespace DataAccess
     internal class FileStreamingDataTable : TextReaderDataTable
     {
         private readonly string _filename;
-        
-        public FileStreamingDataTable(string filename)
+
+        public FileStreamingDataTable(string filename, char columnSeparator)
+            : base(columnSeparator)
         {
             _filename = filename;
         }
@@ -65,9 +67,15 @@ namespace DataAccess
     /// </summary>
     internal abstract class TextReaderDataTable : DataTable
     {
+        private readonly char columnSeparator;
+
         private string[] _names;
 
-        
+        protected TextReaderDataTable(char columnSeparator)
+        {
+            this.columnSeparator = columnSeparator;
+        }
+
         public override IEnumerable<string> ColumnNames
         {
             get
@@ -77,10 +85,10 @@ namespace DataAccess
                     TextReader sr = null;
                     try
                     {
-                        sr = this.OpenText();                    
+                        sr = this.OpenText();
                         // First get columns.
                         string header = sr.ReadLine();
-                        char ch = Reader.GuessSeparateFromHeaderRow(header);
+                        char ch = this.columnSeparator == default(char) ? Reader.GuessSeparateFromHeaderRow(header) : this.columnSeparator;
                         _names = Reader.split(header, ch);
                     }
                     finally
@@ -100,7 +108,7 @@ namespace DataAccess
         // called on reader from OpenText
         // Don't call dipose because that can close streams. 
         protected abstract void CloseText(TextReader reader);
-        
+
         public override IEnumerable<Row> Rows
         {
             get
@@ -113,7 +121,7 @@ namespace DataAccess
                     sr = this.OpenText();
 
                     string header = sr.ReadLine(); // skip past header
-                    char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
+                    char chSeparator = this.columnSeparator == default(char) ? Reader.GuessSeparateFromHeaderRow(header) : this.columnSeparator;
 
                     int illegal = 0;
                     string line;
@@ -124,7 +132,7 @@ namespace DataAccess
                         {
 
                             string[] parts = Reader.split(line, chSeparator);
-                            
+
                             // $$$ Major hack for dealing with newlines in quotes strings.
                             // The better fix here would be to switch to a streaming interface.
                             if (parts.Length != columnCount)
