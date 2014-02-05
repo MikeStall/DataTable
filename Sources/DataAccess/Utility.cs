@@ -128,8 +128,9 @@ namespace DataAccess
             // $$$ How to infer column names?
             // Flatten doesn't have a definitive order.
             // If we had more smart collections, we could infer. 
-            
-            int count = a.Count();
+
+            var items = a.ToList();
+            int count = items.Count();
 
             MutableDataTable d = new MutableDataTable();
 
@@ -142,7 +143,7 @@ namespace DataAccess
 
             // Fill in rows
             int row = 0;
-            foreach (T item in a)
+            foreach (T item in items)
             {
                 string[] values = Flatten(item);
                 Assert(values.Length == columnNames.Length);
@@ -168,11 +169,11 @@ namespace DataAccess
             if (t.IsPrimitive || t == typeof(string))
             {
                 // No properties to lookat.
-                return new string[1] {  "value" };
+                return new [] {  "value" };
             }
             if (t.IsEnum || t == typeof(DateTime))
             {
-                return new string[1] { t.Name };
+                return new [] { t.Name };
             }
             
             return Array.ConvertAll(typeof(T).GetProperties(), prop => prop.Name);
@@ -260,7 +261,7 @@ namespace DataAccess
             Column cKeys = new Column(name1, count);
             Column cVals = new Column(name2, count);
 
-            d.Columns = new Column[] { cKeys, cVals };
+            d.Columns = new [] { cKeys, cVals };
 
             int i = 0;
             foreach (var kv in a)
@@ -285,7 +286,7 @@ namespace DataAccess
             // TKey1 is rows, TKey2 is values.
             MutableDataTable d = new MutableDataTable();
 
-            var rows = dict.Key1;
+            var rows = dict.Key1.ToList();
             int count = rows.Count();
 
             // Set columns
