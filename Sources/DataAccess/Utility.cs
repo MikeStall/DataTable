@@ -59,15 +59,15 @@ namespace DataAccess
         // Case insensitive string compare
         internal static bool Compare(string a, string b)
         {
-            return string.Compare(a, b, true) == 0;
+            return String.Compare(a, b, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
         // All strings become upper case (for comparison)
         public static Dictionary<TKey, TValue> ToDict<TKey, TValue>(MutableDataTable table, string keyName, string valueName)
         {
             // $$$ Should this be on DataTable?
-            int cKey = Utility.GetColumnIndexFromName(table.ColumnNames, keyName);
-            int cValue = Utility.GetColumnIndexFromName(table.ColumnNames, valueName);
+            int cKey = GetColumnIndexFromName(table.ColumnNames, keyName);
+            int cValue = GetColumnIndexFromName(table.ColumnNames, valueName);
             return ToDict<TKey, TValue>(table, cKey, cValue);
         }
 
@@ -145,7 +145,7 @@ namespace DataAccess
             foreach (T item in a)
             {
                 string[] values = Flatten(item);
-                Utility.Assert(values.Length == columnNames.Length);
+                Assert(values.Length == columnNames.Length);
 
                 for (int i = 0; i < columnNames.Length; i++)
                 {
