@@ -47,11 +47,7 @@ namespace DataAccess
             return r;
         }
 
-        public static void Assert(bool f)
-        {
-            Assert(f, String.Empty);
-        }
-        public static void Assert(bool f, string message)
+        public static void Assert(bool f, string message = "")
         {
             if (!f)
             {
