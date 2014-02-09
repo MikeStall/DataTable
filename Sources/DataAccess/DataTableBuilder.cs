@@ -115,17 +115,6 @@ namespace DataAccess
 
             return Utility.ToMutable(source);
         }
-
-        /// <summary>
-        /// Return an in-memory table that contains the topN rows from the table in the filename.
-        /// </summary>
-        /// <param name="builder">ignored</param>
-        /// <param name="filename">filename of table to load. Schema is inferred from header row.</param>
-        /// <returns>a in-memory table containing the topN rows from the supplied file.</returns>
-        public static MutableDataTable ReadSampleTopN(this DataTableBuilder builder, string filename)
-        {
-            return ReadSampleTopN(builder, filename, 100);
-        }
         
         /// <summary>
         /// Return an in-memory table that contains the topN rows from the table in the filename.
