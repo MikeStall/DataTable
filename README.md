@@ -10,7 +10,10 @@ Libaries for easy reading, writing, and manipulation of CSV files. Is able to ha
 
 It's an easier data table than `System.Data.DataTable`.
 
-This was extremely handy in a few projects. So I thought I'd put it up on GitHub and polish it up.
+The following nuget packages are available:
+
+* [CsvTools](https://www.nuget.org/packages/CsvTools) - the base library
+* [CsvTools.Excel](https://www.nuget.org/packages/CsvTools.Excel) - dependency on CsvTools and the OpenXml SDK 
 
 A few quick examples:
 
