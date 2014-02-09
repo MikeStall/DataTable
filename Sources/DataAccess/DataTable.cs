@@ -14,7 +14,7 @@ namespace DataAccess
     /// The table may be just read-only streaming over the rows, which is ideal for large files of millions of rows. 
     /// Or it may have loaded the entire table into memory, which can be ideal for mutation. 
     /// </summary>
-    public abstract class DataTable
+    public abstract partial class DataTable
     {
         /// <summary>
         /// Name of this data table. The semantics of the name are determined by the function that 
