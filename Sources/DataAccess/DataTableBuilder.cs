@@ -84,7 +84,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder">ignored</param>
         /// <param name="stream">input stream to read from</param>
-        /// <param name="delimiter">delimiter characeter to use for separatior</param>
+        /// <param name="delimiter">delimiter character to use for separatior</param>
         /// <returns>a new in-memory table</returns>
         public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, char delimiter)
         {
@@ -97,7 +97,24 @@ namespace DataAccess
             return Reader.Read(stream, delimiter);
         }
 
+        /// <summary>
+        /// Create a csv based on the text provided in a string
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="text">Text to process</param>
+        /// <param name="newLine">Newline character sequence. Defaults to Windows newline (\r\n)</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static MutableDataTable ReadFromString(this DataTableBuilder builder, string text, string newLine = "\r\n")
+        {
+            Debug.Assert(builder != null);
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new ArgumentNullException("text");
+            }
 
+            return Reader.ReadString(text, newLine);
+        }
 
         /// <summary>
         /// Gets a mutable in-memory copy of the given data table.
