@@ -354,9 +354,9 @@ namespace DataAccess
 
         /// <summary>
         /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
-        /// Throws if any of the names are missing. 
+        /// Throws exception if any of the names are missing. 
         /// </summary>
-        /// <param name="names">names of rows to delete. Throws if any of the names are missing. </param>
+        /// <param name="names">Names of columns to delete. Throws exception if any of the names are missing. </param>
         public void DeleteColumns(params string[] names) {            
             int numColumnsOld = this.Columns.Length;
 
@@ -381,7 +381,7 @@ namespace DataAccess
                 }
             }
 
-            Utility.Assert(idxNew == numColumnsNew);
+            Utility.Assert(idxNew == numColumnsNew, "Did find all expected columns to delete");
 
             this.Columns = newColumns;
         }
