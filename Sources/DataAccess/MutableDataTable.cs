@@ -20,7 +20,7 @@ namespace DataAccess
     /// Table is stored in column major format, so supports efficient column operations like add, remove, and reorder.
     /// Also exposes row enumeration. Table can be mutated through either row or column views.
     /// </summary>
-    public class MutableDataTable : DataTable {
+    public partial class MutableDataTable : DataTable {
 
         /// <summary>
         /// Return the set of columnns in this mutable table. 
