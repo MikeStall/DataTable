@@ -67,13 +67,9 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder">ignored</param>
         /// <param name="stream">input stream to read from</param>
+        /// <param name="columns">column headers</param>
         /// <returns>a new in-memory table</returns>
-        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream)
-        {
-            return Read(builder, stream, ',');
-        }
-
-        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, string[] columns)
+        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, string[] columns = null)
         {
             return Reader.Read(stream, ',', columns);
         }
@@ -142,6 +138,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="filename">filename of CSV to read</param>
+        /// <param name="columns">column names</param>
         /// <returns>a streaming data table for the given filename</returns>
         public static DataTable ReadLazy(this DataTableBuilder builder, string filename, string[] columns = null)
         {
@@ -156,6 +153,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="inputStream">input stream. Must be seekable and readable</param>
+        /// <param name="columns">column names</param>
         /// <returns>a streaming data table for the given filename</returns>
         public static DataTable ReadLazy(this DataTableBuilder builder, Stream inputStream, string[] columns = null)
         {
