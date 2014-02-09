@@ -146,7 +146,7 @@ namespace DataAccess
             foreach (T item in items)
             {
                 string[] values = Flatten(item);
-                Assert(values.Length == columnNames.Length);
+                Assert(values.Length == columnNames.Length, string.Format("Row {0} does not have the expected number of values ({1})", row + 1, columnNames.Length));
 
                 for (int i = 0; i < columnNames.Length; i++)
                 {
