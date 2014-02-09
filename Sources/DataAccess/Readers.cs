@@ -286,35 +286,38 @@ namespace DataAccess
                 }
                 var row = -1;
 
-                while(lineEnumerator.MoveNext())
+                while (lineEnumerator.MoveNext())
                 {
                     string line = lineEnumerator.Current;
 
                     row++;
 
-                string[] parts = split(line, separator);
+                    string[] parts = split(line, separator);
 
-                if (parts.Length < numColumns) {
-                    // Deal with possible extra commas at the end. 
-                    // Excel handles this. 
-                    for (int c = 0; c < parts.Length; c++) {
-                        columns[c].Values[row] = parts[c];
-                    }
+                    if (parts.Length < numColumns)
+                    {
+                        // Deal with possible extra commas at the end. 
+                        // Excel handles this. 
+                        for (int c = 0; c < parts.Length; c++)
+                        {
+                            columns[c].Values[row] = parts[c];
+                        }
 
                         if (fAllowMismatch)
                         {
                             for (int c = parts.Length; c < numColumns; c++)
                             {
-                        columns[c].Values[row] = String.Empty;
+                                columns[c].Values[row] = String.Empty;
+                            }
+                            continue;
+                        }
+
                     }
-                    continue;
-                }
 
-                }
-
-                if (!fAllowMismatch) {
-                    // If mismatch allowed, then treat this row as garbage rather
-                    // than throw an exception
+                    if (!fAllowMismatch)
+                    {
+                        // If mismatch allowed, then treat this row as garbage rather
+                        // than throw an exception
                         Utility.Assert(
                             parts.Length == names.Length,
                             String.Format(
@@ -322,11 +325,12 @@ namespace DataAccess
                                 row + 1,
                                 names.Length,
                                 parts.Length));
+                    }
+                    for (int c = 0; c < numColumns; c++)
+                    {
+                        columns[c].Values[row] = parts[c];
+                    }
                 }
-                for (int c = 0; c < numColumns; c++) {
-                    columns[c].Values[row] = parts[c];
-                }
-            }
             }
 
             MutableDataTable data = new MutableDataTable();
