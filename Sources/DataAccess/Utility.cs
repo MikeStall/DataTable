@@ -122,7 +122,7 @@ namespace DataAccess
 
 
         // Dynamically Flatten. 
-        // $$$ Need way to gaurantee that flatten order matches column names.
+        // $$$ Need way to guarantee that flatten order matches column names.
         public static MutableDataTable ToTableX<T>(IEnumerable<T> a, params string[] columnNames)
         {
             // $$$ How to infer column names?
