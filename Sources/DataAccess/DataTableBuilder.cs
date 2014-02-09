@@ -183,7 +183,7 @@ namespace DataAccess
             Column cKeys = new Column(keyName, count);
             Column cVals = new Column(valName, count);
 
-            d.Columns = new Column[] { cKeys, cVals };
+            d.Columns = new [] { cKeys, cVals };
 
             int i = 0;
             foreach (var kv in dict)
@@ -199,8 +199,10 @@ namespace DataAccess
         /// Copy the 2d-dictionary into a in-memory table. This is ideal for creating a sparse table from a dictionary.
         /// Column names are inferred from key values.
         /// This adds a new column (in position 0) to label TKeyRow. 
-        /// </summary>        
+        /// </summary>
+        /// <param name="dict">dictionary to copy</param>
         /// <param name="newColumnName">Name of the new column added which corresponds to TKeyRow.</param>
+        /// <param name="builder"></param>
         public static MutableDataTable From2dDictionary<TKeyRow, TKeyColumn, TValue>(this DataTableBuilder builder, Dictionary2d<TKeyRow, TKeyColumn, TValue> dict, string newColumnName = null)
         {
             Debug.Assert(builder != null);
