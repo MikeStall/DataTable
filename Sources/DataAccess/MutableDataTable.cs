@@ -394,7 +394,7 @@ namespace DataAccess
         public void ApplyToColumn(string name, Func<string, string> func) 
         {
             Column c = this.GetColumn(name);
-            Utility.Assert(c != null);
+            Utility.Assert(c != null, string.Format("Cannot apply function to column [{0}]: column does not exist", name));
 
             for (int i = 0; i < c.Values.Length; i++) {
                 string oldValue = c.Values[i];
