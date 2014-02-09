@@ -298,18 +298,18 @@ namespace DataAccess
                 }
             }
 
-            int rows2 = index.Count; // new number of rows.
+            int expectedNumRows = index.Count; // new number of rows.
 
             int numColumns = this.Columns.Length;
 
             // Now allocate the new columns lengths 
             var columns = new Column[numColumns];
             for (int i = 0; i < numColumns; i++) {
-                columns[i] = new Column(this.Columns[i].Name, rows2);
+                columns[i] = new Column(this.Columns[i].Name, expectedNumRows);
             }
 
             // Copy the the rows we decided to keep.
-            for (int r = 0; r < rows2; r++) {
+            for (int r = 0; r < expectedNumRows; r++) {
                 int rOld = index[r];
 
                 for (int i = 0; i < numColumns; i++) {
@@ -318,8 +318,7 @@ namespace DataAccess
             }
 
             this.Columns = columns;
-            Utility.Assert(this.NumRows == rows2);
-
+            Utility.Assert(this.NumRows == expectedNumRows, "Incorrect number of rows returns by KeepRows function. Expected: " + expectedNumRows);
         }
 
         /// <summary>
