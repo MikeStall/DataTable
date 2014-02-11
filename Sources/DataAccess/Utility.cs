@@ -122,7 +122,7 @@ namespace DataAccess
 
 
         // Dynamically Flatten. 
-        // $$$ Need way to gaurantee that flatten order matches column names.
+        // $$$ Need way to guarantee that flatten order matches column names.
         public static MutableDataTable ToTableX<T>(IEnumerable<T> a, params string[] columnNames)
         {
             // $$$ How to infer column names?
@@ -146,7 +146,7 @@ namespace DataAccess
             foreach (T item in items)
             {
                 string[] values = Flatten(item);
-                Assert(values.Length == columnNames.Length);
+                Assert(values.Length == columnNames.Length, string.Format("Row {0} does not have the expected number of values ({1})", row + 1, columnNames.Length));
 
                 for (int i = 0; i < columnNames.Length; i++)
                 {
