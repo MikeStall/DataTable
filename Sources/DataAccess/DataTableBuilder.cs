@@ -67,13 +67,9 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder">ignored</param>
         /// <param name="stream">input stream to read from</param>
+        /// <param name="columns">column headers</param>
         /// <returns>a new in-memory table</returns>
-        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream)
-        {
-            return Read(builder, stream, ',');
-        }
-
-        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, string[] columns)
+        public static MutableDataTable Read(this DataTableBuilder builder, TextReader stream, string[] columns = null)
         {
             return Reader.Read(stream, ',', columns);
         }
@@ -132,17 +128,6 @@ namespace DataAccess
 
             return Utility.ToMutable(source);
         }
-
-        /// <summary>
-        /// Return an in-memory table that contains the topN rows from the table in the filename.
-        /// </summary>
-        /// <param name="builder">ignored</param>
-        /// <param name="filename">filename of table to load. Schema is inferred from header row.</param>
-        /// <returns>a in-memory table containing the topN rows from the supplied file.</returns>
-        public static MutableDataTable ReadSampleTopN(this DataTableBuilder builder, string filename)
-        {
-            return ReadSampleTopN(builder, filename, 100);
-        }
         
         /// <summary>
         /// Return an in-memory table that contains the topN rows from the table in the filename.
@@ -170,6 +155,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="filename">filename of CSV to read</param>
+        /// <param name="columns">column names</param>
         /// <returns>a streaming data table for the given filename</returns>
         public static DataTable ReadLazy(this DataTableBuilder builder, string filename, string[] columns = null)
         {
@@ -184,6 +170,7 @@ namespace DataAccess
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="inputStream">input stream. Must be seekable and readable</param>
+        /// <param name="columns">column names</param>
         /// <returns>a streaming data table for the given filename</returns>
         public static DataTable ReadLazy(this DataTableBuilder builder, Stream inputStream, string[] columns = null)
         {
@@ -213,7 +200,7 @@ namespace DataAccess
             Column cKeys = new Column(keyName, count);
             Column cVals = new Column(valName, count);
 
-            d.Columns = new Column[] { cKeys, cVals };
+            d.Columns = new [] { cKeys, cVals };
 
             int i = 0;
             foreach (var kv in dict)
@@ -229,8 +216,10 @@ namespace DataAccess
         /// Copy the 2d-dictionary into a in-memory table. This is ideal for creating a sparse table from a dictionary.
         /// Column names are inferred from key values.
         /// This adds a new column (in position 0) to label TKeyRow. 
-        /// </summary>        
+        /// </summary>
+        /// <param name="dict">dictionary to copy</param>
         /// <param name="newColumnName">Name of the new column added which corresponds to TKeyRow.</param>
+        /// <param name="builder"></param>
         public static MutableDataTable From2dDictionary<TKeyRow, TKeyColumn, TValue>(this DataTableBuilder builder, Dictionary2d<TKeyRow, TKeyColumn, TValue> dict, string newColumnName = null)
         {
             Debug.Assert(builder != null);
