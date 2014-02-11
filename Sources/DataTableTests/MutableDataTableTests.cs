@@ -10,6 +10,12 @@ namespace DataTableTests
 {
     public class MutableDataTableTests
     {
+        class TestRow
+        {
+            public string first { get; set; }
+            public string last { get; set; }
+        }
+
         MutableDataTable GetTable()
         {
             string content =
@@ -209,6 +215,48 @@ Fred
 @"first,last,fullname
 Bob,Smith,Bob_Smith
 Fred,Jones,Fred_Jones
+", dt);
+        }
+
+
+        [Fact]
+        public void CreateColumn2()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.CreateColumns<TestRow>(row => new
+                {
+                    fullname = row.last + "_" + row.first,
+                    len = row.first.Length
+                });
+
+            AnalyzeTests.AssertEquals(
+@"first,last,fullname,len
+Bob,Smith,Smith_Bob,3
+Fred,Jones,Jones_Fred,4
+", dt);
+        }
+
+        // $$$ Test cases:
+        // - parser has errors, 
+        // - ensure table is consistent even if parser throws. 
+        // - what if every row fails? How do we get the row1/dummy object?
+
+        [Fact]
+        public void CreateColumn2WithNull()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.CreateColumns<TestRow>(row => new
+            {
+                fullname = row.last + "_" + row.first,
+                len = row.first.Length
+            });
+
+            AnalyzeTests.AssertEquals(
+@"first,last,fullname,len
+Bob,Smith,Smith_Bob,3
+Fred,Jones,Jones_Fred,4
 ", dt);
         }
 

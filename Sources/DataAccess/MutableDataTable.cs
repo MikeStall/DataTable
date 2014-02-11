@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace DataAccess
 {
@@ -164,36 +165,70 @@ namespace DataAccess
             return cNew;
         }
 
-        // Take a single column and split it into multiple.
-        internal void CreateColumnFromSplit<T>(Func<Row, T> fpSplit)
-            where T : IColumnSet, new() {
 
-            T dummy = new T();
+        // New column names infererred from properties on target object
+        // Maps to object to support anonymous objects. 
+        // if fpNewColumns returns null, then that row is skipped and associated columns remain empty. 
+        public void CreateColumns<T>(Func<T, object> fpNewColumns)
+        {
+            if (fpNewColumns == null)
+            {
+                throw new ArgumentNullException("fpNewColumns");
+            }
 
-            string[] fields = dummy.GetFields();
+            var parser = GetParserFunction<T>();
+
+            var row1 = this.Rows.First();
+            var dummy = fpNewColumns(parser(row1));
+
+
+            string[] fields = Utility.InferColumnNames(dummy.GetType());
 
             // Allocate new columns
             Column[] newColumns = new Column[fields.Length];
-            for (int i = 0; i < fields.Length; i++) {
-                newColumns[i] = new Column(fields[i], this.NumRows);
-                this.AddColumnLast(newColumns[i]);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                newColumns[i] = new Column(fields[i], this.NumRows);                
             }
 
+            // apply 
+            List<string> x = new List<string>(fields.Length);
 
-            // Apply splitter function 
-            int rows = this.NumRows;
-            for (int r = 0; r < rows; r++) {
-                Row row = new RowInMemory(this, r);
+            int iRow = 0;
+            foreach (var row in this.Rows)
+            {
+                var val = fpNewColumns(parser(row));
 
-                var result = fpSplit(row);
+                if (val != null)
+                {
+                    // apply T back to columns. Inverse parser function
 
-                // Place results into new columns
-                for (int i = 0; i < fields.Length; i++) {
-                    newColumns[i].Values[r] = result.GetValue(i);
+                    x.Clear();
+                    Utility.FlattenWorker(val, x);
+                    if (x.Count != fields.Length)
+                    {
+                        // Didn't flatten consistently 
+                        string msg = string.Format("Row {0} flattened to {1} fields. Expected {2} fields.", iRow, x.Count, fields.Length);
+                        throw new InvalidOperationException(msg);
+                    }
+
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        newColumns[i].Values[iRow] = x[i];
+                    }
                 }
+
+                iRow++;
+            }
+
+            // Now that we successfully have new data, mutate original table
+            // Wait until the end in case there were errors so that table stays in a consistent state.
+            foreach(var newColumn in newColumns)
+            {
+                this.AddColumnLast(newColumn);
             }
         }
-
+             
         /// <summary>
         /// Merge each column into a new column. Use space as join character. 
         /// This adds a new column. The existing columns are not removed.
@@ -293,6 +328,23 @@ namespace DataAccess
         public Row GetRow(int rowIndex)
         {
             return new RowInMemory(this, rowIndex);
+        }
+
+        /// <summary>
+        /// Only keep rows where the predicate returns true
+        /// </summary>
+        /// <param name="predicate">predicate to execute on each row</param>
+        public void KeepRows<T>(Func<T, bool> predicate)
+        {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException("predicate");
+            }
+
+            Func<Row, T> parser = GetParserFunction<T>();
+
+            // $$$ What to do on parser failure for a row? Throw, Keep, Remove?
+            KeepRows(row => predicate(parser(row)));
         }
 
         /// <summary>

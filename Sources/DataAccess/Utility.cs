@@ -166,6 +166,11 @@ namespace DataAccess
         internal static string[] InferColumnNames<T>()
         {
             Type t = typeof(T);
+            return InferColumnNames(t);
+        }
+
+        internal static string[] InferColumnNames(Type t)
+        {
             if (t.IsPrimitive || t == typeof(string))
             {
                 // No properties to lookat.
@@ -176,7 +181,7 @@ namespace DataAccess
                 return new [] { t.Name };
             }
             
-            return Array.ConvertAll(typeof(T).GetProperties(), prop => prop.Name);
+            return Array.ConvertAll(t.GetProperties(), prop => prop.Name);
         }
 
         // Exposed for testing
@@ -186,8 +191,8 @@ namespace DataAccess
             FlattenWorker(item, vals);         
             return vals.ToArray();
         }
-                
-        private static void FlattenWorker(object item, List<string> vals)
+
+        internal static void FlattenWorker(object item, List<string> vals)
         {
             if (item == null)
             {
@@ -204,6 +209,13 @@ namespace DataAccess
             }
 
             if ((t == typeof(string)) || (t == typeof(DateTime)) || t.IsEnum || (t == typeof(DiscreteValue)))
+            {
+                vals.Add(item.ToString());
+                return;
+            }
+
+            // If it has a TryParse, then it's a simple type that's just a type-safe wrapper over a string.
+            if (t.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static) != null)
             {
                 vals.Add(item.ToString());
                 return;

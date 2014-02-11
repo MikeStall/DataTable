@@ -55,7 +55,7 @@ namespace DataAccess
                 parser = _parserFunc as Func<Row, T>;
                 if (parser == null)
                 {
-                    parser = StrongTypeBinder.BuildMethod<T>(this.ColumnNames);
+                    parser = GetParserFunction<T>();
                     _parserFunc = parser;
                 }
             }
@@ -75,6 +75,16 @@ namespace DataAccess
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Return a delegate that parses a Row from this DataTable into a given T. 
+        /// This is useful if you need to cache the parser function
+        /// </summary>
+        /// <returns>the strongly typed object.</returns>
+        public Func<Row, T> GetParserFunction<T>()
+        {
+            return StrongTypeBinder.BuildMethod<T>(this.ColumnNames);
         }
 
         // Cache the parser function. 
