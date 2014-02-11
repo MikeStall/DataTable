@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace DataAccess
@@ -217,9 +218,21 @@ namespace DataAccess
             }   
         }
 
+        private static IList<string> ReadAllLines(string text, string newLine = "\r\n")
+        {
+            var lines = text.Split(new [] {newLine}, StringSplitOptions.RemoveEmptyEntries).ToList();
+            return lines;
+        }
+
         public static MutableDataTable Read(TextReader stream, char delimiter = '\0', string[] defaultColumns = null)
         {
             IList<string> lines = ReadAllLines(stream);
+            return ReadArray(lines, delimiter, false, defaultColumns);
+        }
+
+        public static MutableDataTable ReadString(string text, string newLine = "\r\n", char delimiter = '\0', string[] defaultColumns = null)
+        {
+            IList<string> lines = ReadAllLines(text, newLine);
             return ReadArray(lines, delimiter, false, defaultColumns);
         }
 
