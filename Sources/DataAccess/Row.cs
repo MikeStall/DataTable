@@ -10,7 +10,7 @@ namespace DataAccess
     /// Represents a row within a <see cref="DataTable"/>
     /// The Row may or may not be mutable, depending on whether the table is mutable.
     /// </summary>
-    public abstract class Row
+    public abstract partial class Row
     {
         /// <summary>
         /// ordered collection of values for this row.

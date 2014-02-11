@@ -5,7 +5,7 @@ namespace DataAccess {
     /// <summary>
     /// Column from an in-memory data table. Columns know their length and directly expose their values as a mutable array.
     /// </summary>
-    public class Column {
+    public partial class Column {
         
         /// <summary>
         /// Name of the column. Operations on column names are case-insensitive.
