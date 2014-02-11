@@ -207,12 +207,13 @@ namespace DataAccess
 
             return c;
         }
-        
+
         /// <summary>
         /// rename a column from an old name to the new name 
         /// </summary>
         /// <param name="oldName">existing column in the table</param>
         /// <param name="newName">new name for the column. Must be a unique name</param>
+        /// <param name="throwOnMissing">should an exception be thrown if the column is not in the table</param>
         public void RenameColumn(string oldName, string newName, bool throwOnMissing = true) 
         {            
             if (!HasColumnName(oldName))
@@ -298,18 +299,18 @@ namespace DataAccess
                 }
             }
 
-            int rows2 = index.Count; // new number of rows.
+            int expectedNumRows = index.Count; // new number of rows.
 
             int numColumns = this.Columns.Length;
 
             // Now allocate the new columns lengths 
             var columns = new Column[numColumns];
             for (int i = 0; i < numColumns; i++) {
-                columns[i] = new Column(this.Columns[i].Name, rows2);
+                columns[i] = new Column(this.Columns[i].Name, expectedNumRows);
             }
 
             // Copy the the rows we decided to keep.
-            for (int r = 0; r < rows2; r++) {
+            for (int r = 0; r < expectedNumRows; r++) {
                 int rOld = index[r];
 
                 for (int i = 0; i < numColumns; i++) {
@@ -318,8 +319,7 @@ namespace DataAccess
             }
 
             this.Columns = columns;
-            Utility.Assert(this.NumRows == rows2);
-
+            Utility.Assert(this.NumRows == expectedNumRows, "Incorrect number of rows returns by KeepRows function. Expected: " + expectedNumRows);
         }
 
         /// <summary>
@@ -354,9 +354,9 @@ namespace DataAccess
 
         /// <summary>
         /// Remove columns with given names. This is the opposite of <see cref="KeepColumns"/> 
-        /// Throws if any of the names are missing. 
+        /// Throws exception if any of the names are missing. 
         /// </summary>
-        /// <param name="names">names of rows to delete. Throws if any of the names are missing. </param>
+        /// <param name="names">Names of columns to delete. Throws exception if any of the names are missing. </param>
         public void DeleteColumns(params string[] names) {            
             int numColumnsOld = this.Columns.Length;
 
@@ -381,7 +381,7 @@ namespace DataAccess
                 }
             }
 
-            Utility.Assert(idxNew == numColumnsNew);
+            Utility.Assert(idxNew == numColumnsNew, "Did find all expected columns to delete");
 
             this.Columns = newColumns;
         }
@@ -395,7 +395,7 @@ namespace DataAccess
         public void ApplyToColumn(string name, Func<string, string> func) 
         {
             Column c = this.GetColumn(name);
-            Utility.Assert(c != null);
+            Utility.Assert(c != null, string.Format("Cannot apply function to column [{0}]: column does not exist", name));
 
             for (int i = 0; i < c.Values.Length; i++) {
                 string oldValue = c.Values[i];

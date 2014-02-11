@@ -85,6 +85,26 @@ namespace DataTableTests
 
             s.Position = 0; // verify stream is not disposed
             
-        }        
+        }
+
+        [Fact]
+        public void ReadFromString_ProperInputWithDefaultLineEndings_EvaluatesProperly()
+        {
+            string input = "ID,Name,Age\r\n1,John Smith,23\r\n2,Jane Jones,32";
+            var dt = DataTable.New.ReadFromString(input);
+            Assert.Equal(2, dt.Rows.Count());
+            Assert.Equal(3, dt.Columns.Count());
+            Assert.Equal("Name", dt.ColumnNames.ToList()[1]);
+        }
+
+        [Fact]
+        public void ReadFromString_ProperInputUnixLineEndings_EvaluatesProperly()
+        {
+            string input = "ID,Name,Age\n1,John Smith,23\n2,Jane Jones,32";
+            var dt = DataTable.New.ReadFromString(input, "\n");
+            Assert.Equal(2, dt.Rows.Count());
+            Assert.Equal(3, dt.Columns.Count());
+            Assert.Equal("Name", dt.ColumnNames.ToList()[1]);
+        }
     }
 }
