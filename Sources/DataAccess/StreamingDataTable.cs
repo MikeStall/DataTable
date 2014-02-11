@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ namespace DataAccess
     // Use Stream instead of TextReader because it must be seekable.
     // This assumes exclusive access ot the stream. 
     // If another instance comes in, they'll trash each others position.
+    [DataContract]
     internal class StreamingDataTable : TextReaderDataTable
     {
         readonly Stream _input;
@@ -41,6 +43,7 @@ namespace DataAccess
             // Beware, disposing a StreamReader will get dispose the underlying stream.
             // So just nop here since we don't own the stream.
         }
+        [DataMember(Order = 2)]
         public override IEnumerable<string> ColumnNames
         {
             get
@@ -125,6 +128,7 @@ namespace DataAccess
     /// <summary>
     ///  Stream rows from a file. This is ideal for large read-only files.
     /// </summary>
+    [DataContract]
     internal abstract class TextReaderDataTable : DataTable
     {
         private string[] _names;
@@ -161,7 +165,8 @@ namespace DataAccess
         // called on reader from OpenText
         // Don't call dipose because that can close streams. 
         protected abstract void CloseText(TextReader reader);
-        
+
+        [DataMember(Order = 3)]
         public override IEnumerable<Row> Rows
         {
             get

@@ -1,20 +1,24 @@
 ﻿using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace DataAccess {
 
     /// <summary>
     /// Column from an in-memory data table. Columns know their length and directly expose their values as a mutable array.
     /// </summary>
+    [DataContract]
     public class Column {
         
         /// <summary>
         /// Name of the column. Operations on column names are case-insensitive.
         /// </summary>
+        [DataMember(Order = 1)]
         public string Name { get; set; } 
 
         /// <summary>
         /// Values in this column. 
         /// </summary>
+        [DataMember(Order = 2)]
         public string[] Values { get; set; } 
         
         /// <summary>

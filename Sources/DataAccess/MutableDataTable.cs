@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
@@ -20,12 +21,14 @@ namespace DataAccess
     /// Table is stored in column major format, so supports efficient column operations like add, remove, and reorder.
     /// Also exposes row enumeration. Table can be mutated through either row or column views.
     /// </summary>
+    [DataContract]
     public class MutableDataTable : DataTable {
 
         /// <summary>
         /// Return the set of columnns in this mutable table. 
         /// Column represent the direct storage and are mutable.
         /// </summary>
+        [DataMember(Order = 4)]
         public Column[] Columns { get; set; }
                
         /// <summary>

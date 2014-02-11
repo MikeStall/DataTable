@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System;
+using System.Runtime.Serialization;
 
 namespace DataAccess
 {
@@ -10,17 +11,20 @@ namespace DataAccess
     /// Represents a row within a <see cref="DataTable"/>
     /// The Row may or may not be mutable, depending on whether the table is mutable.
     /// </summary>
+    [DataContract]
     public abstract class Row
     {
         /// <summary>
         /// ordered collection of values for this row.
         /// The ordering matches the column ordering. 
         /// </summary>
+        [DataMember(Order = 1)]
         public abstract IList<string> Values { get ; }
 
         /// <summary>
         /// Column names for the table containing this row. This is a parallel collection to <see cref="Values"/>
         /// </summary>
+        [DataMember(Order = 2)]
         public abstract IEnumerable<string> ColumnNames { get; }
         
         // Write this single row to a CSV file

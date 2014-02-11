@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
@@ -14,6 +15,7 @@ namespace DataAccess
     /// The table may be just read-only streaming over the rows, which is ideal for large files of millions of rows. 
     /// Or it may have loaded the entire table into memory, which can be ideal for mutation. 
     /// </summary>
+    [DataContract]
     public abstract class DataTable
     {
         /// <summary>
@@ -23,18 +25,21 @@ namespace DataAccess
         /// of how the table was created. 
         /// Name is primarily a debugging tool. You can't programaticaly rely on the name property unless you created the table.
         /// </summary>
+        [DataMember(Order = 1)]
         public string Name { get; set; }
 
         /// <summary>
         /// Name of columns in the table. Columns should be case-insensitive.
         /// If this is a mutable table, columns may be added, removed, or reordered.
         /// </summary>
+        [DataMember(Order = 2)]
         public abstract IEnumerable<string> ColumnNames { get; }
 
         /// <summary>
         /// Enumeration of rows in the table.
         /// Each row has a (possibly empty) value for each column.
         /// </summary>
+        [DataMember(Order = 3)]
         public abstract IEnumerable<Row> Rows { get; }
 
         /// <summary>
