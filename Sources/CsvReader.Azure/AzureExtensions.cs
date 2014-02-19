@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using System.IO;
-using System.Diagnostics;
 
 namespace DataAccess
 {
@@ -48,14 +43,16 @@ namespace DataAccess
         /// <returns>in-memory mutable datatable from blob</returns>
         public static MutableDataTable ReadAzureBlob(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
         {
-            CloudBlob blob = GetBlobAndVerify(container, blobName);
+            var blob = GetBlobAndVerify(container, blobName);
 
             // We're returning a MutableDataTable (which is in-memory) anyways, so fine to download into an in-memory buffer.
             // Avoid downloading to a file because Azure nodes may not have a local file resource.
-            string content = blob.DownloadText();
-            
-            var stream = new StringReader(content);
-            var dt = DataTable.New.Read(stream);
+            var stream = new MemoryStream();
+            blob.DownloadToStream(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            TextReader textReader = new StreamReader(stream);
+            var dt = DataTable.New.Read(textReader);
             dt.Name = container.Name + "." + blobName;
             return dt;
         }
@@ -83,8 +80,7 @@ namespace DataAccess
         /// <returns>in-memory mutable datatable from blob</returns>
         public static DataTable ReadAzureBlobLazy(this DataTableBuilder builder, CloudBlobContainer container, string blobName)
         {
-            CloudBlob blob = GetBlobAndVerify(container, blobName);
-            
+            var blob = GetBlobAndVerify(container, blobName);            
             var stream = blob.OpenRead();
             var dt = DataTable.New.ReadLazy(stream);
             
@@ -93,10 +89,10 @@ namespace DataAccess
         }
 
 
-        private static CloudBlob GetBlobAndVerify(CloudBlobContainer container, string blobName)
+        private static ICloudBlob GetBlobAndVerify(CloudBlobContainer container, string blobName)
         {
-            CloudBlob blob = container.GetBlobReference(blobName);
-            if (!Exists(blob))
+            var blob = container.GetBlockBlobReference(blobName);
+            if (!blob.Exists())
             {
                 string containerName = container.Name;
                 string accountName = container.ServiceClient.Credentials.AccountName;
@@ -111,31 +107,8 @@ namespace DataAccess
             var client = account.CreateCloudBlobClient();
 
             var container = client.GetContainerReference(containerName);
-            container.CreateIfNotExist();
+            container.CreateIfNotExists();
             return container;
-        }
-
-        // Super lame that you need to check for exceptions. Seriously?
-        // http://blog.smarx.com/posts/testing-existence-of-a-windows-azure-blob
-        [DebuggerNonUserCode]
-        private static bool Exists(CloudBlob blob)
-        {
-            try
-            {
-                blob.FetchAttributes();
-                return true;
-            }
-            catch (StorageClientException e)
-            {
-                if (e.ErrorCode == StorageErrorCode.ResourceNotFound)
-                {
-                    return false;
-                }
-                else
-                {
-                    throw;
-                }
-            }
         }
 
         /// <summary>
@@ -149,7 +122,7 @@ namespace DataAccess
         /// <returns></returns>
         public static DataTable ReadAzureTableLazy(this DataTableBuilder builder, CloudStorageAccount account, string tableName)
         {
-            CloudTableClient tableClient = account.CreateCloudTableClient();
+            var tableClient = account.CreateCloudTableClient();
 
             return new AzureStreamingTable { _tableName = tableName, _tableClient = tableClient, Name = tableName };
         }

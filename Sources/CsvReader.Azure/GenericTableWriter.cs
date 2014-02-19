@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Data.Services.Client;
-using System.Xml.Linq;
-using System.Xml;
 using System.Data.Services.Common;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+using System.Linq;
+using System.Xml.Linq;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.WindowsAzure.Storage.Table.DataServices;
 using System.Text.RegularExpressions;
 
 namespace DataAccess
@@ -150,11 +149,15 @@ namespace DataAccess
                  });
 
 
-            CloudTableClient tableClient = account.CreateCloudTableClient();
+            var tableClient = account.CreateCloudTableClient();
+            var tableReference = tableClient.GetTableReference(tableName);
 
-            tableClient.DeleteTableIfExist(tableName);
-            tableClient.CreateTableIfNotExist(tableName);
-            
+            if (tableReference.Exists())
+            {
+                tableReference.Delete();
+            }
+
+            tableReference.Create();
             
             GenericTableWriter w = new GenericTableWriter 
             {
@@ -191,7 +194,8 @@ namespace DataAccess
                 {
                     dups.Clear();
                     lastPartitionKey = null;
-                    ctx = tableClient.GetDataServiceContext();
+                    ctx = tableClient.GetTableServiceContext();
+                    ctx.Format.UseAtom();
                     ctx.WritingEntity += new EventHandler<ReadingWritingEntityEventArgs>(w.ctx_WritingEntity);
                     batchSize = 0;
                 }
