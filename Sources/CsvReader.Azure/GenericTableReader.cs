@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Data.Services.Client;
 using System.Xml.Linq;
-using System.Xml;
-using System.Data.Services.Common;
+using Common = System.Data.Services.Common;
+using Client = System.Data.Services.Client;
 
 namespace DataAccess
 {
-    [DataServiceKey("PartitionKey", "RowKey")]
+    [Common.DataServiceKey("PartitionKey", "RowKey")]
     internal class GenericEntity
     {
         public string PartitionKey { get; set; }
@@ -26,7 +24,7 @@ namespace DataAccess
         // This manually parses the XML that comes back.
         // This function uses code from this blog entry:
         // http://blogs.msdn.com/b/avkashchauhan/archive/2011/03/28/reading-and-saving-table-storage-entities-without-knowing-the-schema-or-updating-tablestorageentity-schema-at-runtime.aspx
-        public static void OnReadingEntity(object sender, ReadingWritingEntityEventArgs args)
+        public static void OnReadingEntity(object sender, Client.ReadingWritingEntityEventArgs args)
         {
             GenericEntity entity = args.Entity as GenericEntity;
             if (entity == null)

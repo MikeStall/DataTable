@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Table.DataServices;
 using Xunit;
-using Microsoft.WindowsAzure;
 using DataAccess;
-using Microsoft.WindowsAzure.StorageClient;
 using System.IO;
 using System.Diagnostics;
 
@@ -32,8 +31,8 @@ namespace CsvReader.Azure.Tests
             Assert.Throws<FileNotFoundException>(() => DataTable.New.ReadAzureBlob(account, containerName, blobName));
 
             // Container exists, blob name doesn't.
-            CloudBlobContainer container = client.GetContainerReference(containerName);
-            container.CreateIfNotExist();
+            var container = client.GetContainerReference(containerName);
+            container.CreateIfNotExists();
             Assert.Throws<FileNotFoundException>(() => DataTable.New.ReadAzureBlob(account, containerName, blobName));
         }
 
@@ -70,8 +69,8 @@ namespace CsvReader.Azure.Tests
 
             // Verify existence.
             {
-                CloudBlobContainer container = client.GetContainerReference(containerName);
-                CloudBlob blob = container.GetBlobReference(blobName);
+                var container = client.GetContainerReference(containerName);
+                var blob = container.GetBlockBlobReference(blobName);
                 string contents = blob.DownloadText();
                 Assert.Equal(originalContent, contents);
             }

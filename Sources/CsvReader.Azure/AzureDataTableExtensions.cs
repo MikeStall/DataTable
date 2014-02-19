@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using System.IO;
-using System.Diagnostics;
 
 namespace DataAccess
 {
@@ -24,7 +21,7 @@ namespace DataAccess
         /// <param name="blobName">blob name</param>
         public static void SaveToAzureBlob(this DataTable table, CloudStorageAccount account, string containerName, string blobName)
         {
-            CloudBlobContainer container = DataTableBuilderAzureExtensions.GetContainer(account, containerName);
+            var container = DataTableBuilderAzureExtensions.GetContainer(account, containerName);
             SaveToAzureBlob(table, container, blobName);
         }
 
@@ -36,11 +33,14 @@ namespace DataAccess
         /// <param name="blobName">blob name</param>
         public static void SaveToAzureBlob(this DataTable table, CloudBlobContainer container, string blobName)
         {
-            var blob = container.GetBlobReference(blobName);
-            using (BlobStream stream = blob.OpenWrite())
+            var blob = container.GetBlockBlobReference(blobName);
+            using (var stream = new MemoryStream())
             using (TextWriter writer = new StreamWriter(stream))
             {
                 table.SaveToStream(writer);
+                writer.Flush();
+                stream.Seek(0, SeekOrigin.Begin);
+                blob.UploadFromStream(stream);
             }
         }
 

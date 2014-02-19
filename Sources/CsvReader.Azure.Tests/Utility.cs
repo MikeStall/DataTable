@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Data.Services.Client;
 using System.Linq;
-using System.Text;
-using Microsoft.WindowsAzure.StorageClient;
-using System.Data.Services.Client;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.WindowsAzure.Storage.Table.DataServices;
 using Xunit;
 using System.IO;
 using DataAccess;
-using Microsoft.WindowsAzure;
 
 namespace CsvReader.Azure.Tests
 {
@@ -15,7 +13,7 @@ namespace CsvReader.Azure.Tests
     {
         public static T Lookup<T>(CloudTableClient tableClient, string tableName, string partitionKey, string rowKey) where T : TableServiceEntity
         {
-            TableServiceContext ctx = tableClient.GetDataServiceContext();
+            TableServiceContext ctx = tableClient.GetTableServiceContext();
 
             // Azure will special case this lookup pattern for a single entity. 
             // See http://blogs.msdn.com/b/windowsazurestorage/archive/2010/11/06/how-to-get-most-out-of-windows-azure-tables.aspx 
@@ -25,7 +23,7 @@ namespace CsvReader.Azure.Tests
                 var x = from row in ctx.CreateQuery<T>(tableName)
                         where row.PartitionKey == partitionKey && row.RowKey == rowKey
                         select row;
-                var x2 = x.AsTableServiceQuery<T>();
+                var x2 = x.AsTableServiceQuery<T>(ctx);
 
                 return x2.First();
             }
@@ -41,11 +39,11 @@ namespace CsvReader.Azure.Tests
         public static T[] ReadTable<T>(CloudStorageAccount account, string tableName) where T : TableServiceEntity
         {
             CloudTableClient tableClient = account.CreateCloudTableClient();
-            TableServiceContext ctx = tableClient.GetDataServiceContext();
+            TableServiceContext ctx = tableClient.GetTableServiceContext();
 
 
             var query = from row in ctx.CreateQuery<T>(tableName) select row;
-            var query2 = query.AsTableServiceQuery<T>();
+            var query2 = query.AsTableServiceQuery<T>(ctx);
 
             // Verify table matches source           
             T[] result = query2.ToArray();

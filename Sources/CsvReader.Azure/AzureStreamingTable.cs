@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
-using System.IO;
-using System.Diagnostics;
+using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.WindowsAzure.Storage.Table.DataServices;
 
 namespace DataAccess
 {
@@ -34,8 +31,9 @@ namespace DataAccess
         {
             if (_columnNames == null)
             {
-                TableServiceContext ctx = _tableClient.GetDataServiceContext();
+                var ctx = _tableClient.GetTableServiceContext();
                 ctx.IgnoreMissingProperties = true;
+                ctx.Format.UseAtom();
                 ctx.ReadingEntity += GenericTableReader.OnReadingEntity;
 
                 var x = from o in ctx.CreateQuery<GenericEntity>(_tableName) select o;
@@ -56,16 +54,17 @@ namespace DataAccess
             get
             {
                 InitColumnNames();
-                TableServiceContext ctx = _tableClient.GetDataServiceContext();
+                var ctx = _tableClient.GetTableServiceContext();
+                ctx.Format.UseAtom();
                 ctx.IgnoreMissingProperties = true;
                 ctx.ReadingEntity += GenericTableReader.OnReadingEntity;
 
                 var x = from o in ctx.CreateQuery<GenericEntity>(_tableName) select o;
 
-                CloudTableQuery<GenericEntity> results = x.AsTableServiceQuery();
+                var results = x.AsTableServiceQuery(ctx);
 
                 // Convert GenericEntity to Row
-                foreach (GenericEntity entity in results)
+                foreach (var entity in results)
                 {
                     string[] values = Array.ConvertAll(_columnNames,
                         columnName =>
