@@ -87,6 +87,24 @@ namespace DataTableTests
             
         }
 
+        private class test
+        {
+            public decimal a { get; set; }
+            public string b { get; set; }
+        }
+
+        [Fact]
+        public void FromEnumerable_WithDecimalField()
+        {
+            var items = new List<test> {new test {a = 1.23m, b = "abc"}, new test {a = 2.21m, b = "def"}};
+            var table = DataTable.New.FromEnumerable(items);
+            Assert.NotNull(table);
+            Assert.Equal(2, table.NumRows);
+            Assert.Equal("a", table.ColumnNames.First());
+            var firstRow = table.Rows.First();
+            Assert.Equal(1.23m, Convert.ToDecimal(firstRow.Values.First()));
+        }
+
         [Fact]
         public void ReadFromString_ProperInputWithDefaultLineEndings_EvaluatesProperly()
         {
