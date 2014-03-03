@@ -111,6 +111,39 @@ Smith,Bob
 Jones,Fred
 ", dt);
         }
+        
+        [Fact]
+        public void KeepColumnsDoNotThrow()
+        {
+            MutableDataTable dt = GetTable();
+
+            dt.KeepColumns(false, "last", "first", "made up column name");
+
+            AnalyzeTests.AssertEquals(
+@"last,first
+Smith,Bob
+Jones,Fred
+", dt);
+        }
+
+        [Fact]
+        public void KeepColumnsThrowOnMissing()
+        {
+            MutableDataTable dt = GetTable();
+
+            bool wasErrorThrown = false;
+            try
+            {
+                dt.KeepColumns(true, "last", "first", "made up column name");
+            }
+            catch (InvalidOperationException)
+            {
+                wasErrorThrown = true;
+            }
+
+            Assert.True(wasErrorThrown);
+            // not testing contents of the table since we are assuming that an Exception was thrown
+        }
 
         [Fact]
         public void KeepColumnsRemove()

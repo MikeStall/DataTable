@@ -28,28 +28,43 @@ namespace DataAccess
         /// Column represent the direct storage and are mutable.
         /// </summary>
         public Column[] Columns { get; set; }
-               
+
+        /// <summary>
+        /// Remove all columns except for the ones listed. 
+        /// Allows case insensitive matching.
+        /// Also reorders to match names.
+        /// </summary>
+        /// <param name="throwOnMissing">throw an exception if one of the columns is missing</param>
+        /// <param name="names">names of columns to match</param>
+        public void KeepColumns(bool throwOnMissing, params string[] names) {
+            int len = names.Length;
+            var keep = new List<Column>();
+            foreach (var name in names)
+            {
+                var col = GetColumn(name);
+                if (col == null)
+                {
+                    if (throwOnMissing)
+                    {
+                        throw new InvalidOperationException("No column named:" + name);
+                    }
+                    continue;
+                }
+                col.Name = name;
+                keep.Add(col);
+            }
+            this.Columns = keep.ToArray();
+        }
+
         /// <summary>
         /// Remove all columns except for the ones listed. 
         /// Allows case insensitive matching.
         /// Also reorders to match names.
         /// </summary>
         /// <param name="names">names of columns to match</param>
-        public void KeepColumns(params string[] names) {
-            int len = names.Length;
-            var keep = new Column[len];
-            for (int i = 0; i < len; i++) {
-                string name = names[i];
-                keep[i] = GetColumn(name);
-
-                if (keep[i] == null)
-                {
-                    throw new InvalidOperationException("No column named:" + name);
-                }
-                keep[i].Name = name; // Normalize names.
-                
-            }
-            this.Columns = keep;
+        public void KeepColumns(params string[] names)
+        {
+            KeepColumns(true, names);
         }
 
         private void VerifyColumnIndex(int position)
