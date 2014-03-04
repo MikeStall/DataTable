@@ -94,15 +94,26 @@ namespace DataTableTests
         }
 
         [Fact]
-        public void FromEnumerable_WithDecimalField()
+        public void FromEnumerable_WithDecimalField_CheckWithRowAs()
         {
             var items = new List<test> {new test {a = 1.23m, b = "abc"}, new test {a = 2.21m, b = "def"}};
             var table = DataTable.New.FromEnumerable(items);
             Assert.NotNull(table);
             Assert.Equal(2, table.NumRows);
             Assert.Equal("a", table.ColumnNames.First());
+
+            // test that the value made it in properly
             var firstRow = table.Rows.First();
             Assert.Equal(1.23m, Convert.ToDecimal(firstRow.Values.First()));
+
+            // test that RowsAs handles decimals gracefully as well
+            var i = 0;
+            foreach (var newRow in table.RowsAs<test>())
+            {
+                var existingRow = items[i++];
+                Assert.Equal(existingRow.a, newRow.a);
+                Assert.Equal(existingRow.b, newRow.b);
+            }
         }
 
         [Fact]
