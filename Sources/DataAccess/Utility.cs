@@ -215,7 +215,7 @@ namespace DataAccess
             }
 
             // If it has a TryParse, then it's a simple type that's just a type-safe wrapper over a string.
-            if (t.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static) != null)
+            if (t.GetMethods().Any(x => x.Name == "TryParse" && x.IsPublic && x.IsStatic))
             {
                 vals.Add(item.ToString());
                 return;
