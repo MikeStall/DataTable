@@ -326,6 +326,14 @@ namespace DataAccess
         {
             return new RowInMemory(this, rowIndex);
         }
+        
+        /// <summary>
+        /// Remove all rows that are empty (empty string or null in all columns)
+        /// </summary>
+        public void RemoveEmptyRows()
+        {
+            KeepRows(x => x.Values.Any(v => !string.IsNullOrEmpty(v)));
+        }
 
         /// <summary>
         /// Only keep rows where the predicate returns true
