@@ -372,5 +372,24 @@ FRED,Jones
             Assert.True(t.IsPublic);
             Assert.True(typeof(DataTable).IsAssignableFrom(t));
         }
+
+        [Fact]
+        public void RemoveEmptyRows()
+        {
+            string content =
+@"first,last
+Bob, Smith
+,
+Fred, Jones
+,
+Bill,
+,";
+            // content has 6 total rows: 2 with full content, 1 with partial content and two that are completely empty
+
+            var table = DataTable.New.ReadFromString(content);
+            Assert.Equal(6, table.NumRows); // expect the empty rows to show up initially
+            table.RemoveEmptyRows();
+            Assert.Equal(3, table.NumRows); // expect all rows with some content to remain, empty rows removed
+        }
     }
 }
