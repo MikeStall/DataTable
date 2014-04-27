@@ -13,13 +13,12 @@ namespace DataAccess
     // If another instance comes in, they'll trash each others position.
     internal class StreamingDataTable : TextReaderDataTable
     {
-        readonly Stream _input;
-
-        private readonly string[] _columns;
-
+        internal readonly Stream _input;
+                
         public StreamingDataTable(Stream input, string[] columns = null)
+            : base(columns)
         {
-            // We could optimize to avoid requiring CanSeek if we failed on attemps
+            // We could optimize to avoid requiring CanSeek if we failed on attempts
             // to read the the rows multiple times. 
             if (!input.CanSeek || !input.CanRead)
             {
@@ -27,94 +26,35 @@ namespace DataAccess
             }
 
             _input = input;
-            this._columns = columns;
         }
 
         protected override TextReader OpenText()
         {
             _input.Position = 0;
-            
-            return new IgnoreFirstReadLineStreamReader(_input, _columns != null);
+
+            return new StreamReader(_input);
         }
         protected override void CloseText(TextReader reader)
         {
             // Beware, disposing a StreamReader will get dispose the underlying stream.
             // So just nop here since we don't own the stream.
-        }
-        public override IEnumerable<string> ColumnNames
-        {
-            get
-            {
-                return this._columns ?? base.ColumnNames;
-            }
-        }
+        }      
     }
-
-    internal class IgnoreFirstReadLineStreamReader : StreamReader
-    {
-        private readonly bool ignore;
-
-        private bool ignored;
-
-        private string firstLine;
-
-        public override string ReadLine()
-        {
-            if (ignore && !ignored)
-            {
-                ignored = true;
-                return firstLine = base.ReadLine();
-            }
-
-            if (firstLine != null)
-            {
-                var tmp = firstLine;
-                firstLine = null;
-                return tmp;
-            }
-            return base.ReadLine();
-        }
-
-        public IgnoreFirstReadLineStreamReader(Stream stream, bool ignore = false)
-            :base(stream)
-        {
-            this.ignore = ignore;
-        }
-        public IgnoreFirstReadLineStreamReader(string filename, bool ignore = false)
-            : base(filename)
-        {
-            this.ignore = ignore;
-        }
-    }
-
 
     internal class FileStreamingDataTable : TextReaderDataTable
     {
         private readonly string _filename;
 
-        private string[] _columns;
-
         public FileStreamingDataTable(string filename, string[] columns = null)
+            : base(columns)
         {
             _filename = filename;
-            this._columns = columns;
         }
 
         protected override TextReader OpenText()
         {
-            if (_columns == null)
-            {
-                return new StreamReader(_filename);
-            }
-            return new IgnoreFirstReadLineStreamReader(_filename, true);
-        }
-        public override IEnumerable<string> ColumnNames
-        {
-            get
-            {
-                return _columns ?? base.ColumnNames;
-            }
-        }
+            return new StreamReader(_filename);            
+        }   
 
         protected override void CloseText(TextReader reader)
         {
@@ -127,14 +67,26 @@ namespace DataAccess
     /// </summary>
     internal abstract class TextReaderDataTable : DataTable
     {
-        private string[] _names;
-        
+        private string[] _columnNames;
+
+        // Is the first row the headers or data?
+        private bool _firstRowIsHeaders;
+
+        protected TextReaderDataTable(string[] columnNames)
+        {
+            _columnNames = columnNames;
+
+            // No column names provided, so assume they're in the first row
+            _firstRowIsHeaders = columnNames == null;
+        }
+       
         public override IEnumerable<string> ColumnNames
         {
             get
             {
-                if (_names == null)
+                if (_columnNames == null)
                 {
+                    // Read the column names as the first row. 
                     TextReader sr = null;
                     try
                     {
@@ -142,7 +94,7 @@ namespace DataAccess
                         // First get columns.
                         string header = sr.ReadLine();
                         char ch = Reader.GuessSeparateFromHeaderRow(header);
-                        _names = Reader.split(header, ch);
+                        _columnNames = Reader.split(header, ch);
                     }
                     finally
                     {
@@ -152,79 +104,62 @@ namespace DataAccess
                         }
                     }
                 }
-                return _names;
+                return _columnNames;
             }
         }
 
         protected abstract TextReader OpenText();
 
         // called on reader from OpenText
-        // Don't call dipose because that can close streams. 
+        // Don't call dispose because that can close streams. 
         protected abstract void CloseText(TextReader reader);
-        
+
         public override IEnumerable<Row> Rows
         {
             get
             {
                 int columnCount = this.ColumnNames.Count();
                 TextReader sr = null;
-                
+                                                
                 try
-                {
+                {                    
                     sr = this.OpenText();
 
-                    StreamReader underlyingStream = sr as StreamReader;
+                    char[] buffer = new char[10*1000];
 
-                    string header = sr.ReadLine(); // skip past header
-                    char chSeparator = Reader.GuessSeparateFromHeaderRow(header);
+                    Reader r = new Reader();
+                    r.StartRow();
 
-                    int illegal = 0;
-                    long offsetOld = -1;
-
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
+                    while (true)
                     {
-                        if (underlyingStream != null)
+                        int read = sr.ReadBlock(buffer, 0, buffer.Length);
+                        if (read == 0)
                         {
-                            offsetOld = underlyingStream.BaseStream.Position;
-                        }
-
-                        RowFromStreamingTable row = null;
-                        try
-                        {
-
-                            string[] parts = Reader.split(line, chSeparator);
-                            
-                            // $$$ Major hack for dealing with newlines in quotes strings.
-                            // The better fix here would be to switch to a streaming interface.
-                            if (parts.Length != columnCount)
+                            // At end of file. 
+                            var values = r.ProcessEndOfFile(trim: true); // signal end
+                            if (values != null)
                             {
-                                string line2 = sr.ReadLine();
-                                line += Environment.NewLine + line2;
-
-                                parts = Reader.split(line, chSeparator);
+                                Row row = new RowFromStreamingTable(values, this);
+                                yield return row;
                             }
-
-                            row = new RowFromStreamingTable(parts, this);
-                        }
-                        catch (AssertException)
-                        {
-                            // Something really corrupt about this row. Ignore it. 
-                            illegal++;
-                        }
-                        if (row != null)
-                        {
-                            yield return row;
+                            break;
                         }
 
-                        if (underlyingStream != null)
+                        for (int i = 0; i < read; i++)
                         {
-                            if (underlyingStream.BaseStream.Position != offsetOld)
+                            char ch = buffer[i];
+
+                            var values = r.ProcessChar(ch, trim: true);
+                            if (values != null)
                             {
-                                underlyingStream.DiscardBufferedData();
+                                if (!_firstRowIsHeaders || r.rowCount > 1)
+                                {
+                                    Row row = new RowFromStreamingTable(values, this);
+                                    yield return row;
+                                }
                             }
-                        }
-                    }
+                        }                      
+                    } // loop back
                 }
                 finally
                 {

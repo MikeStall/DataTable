@@ -7,12 +7,20 @@ using System.Text;
 namespace DataAccess
 {
 
-    // General reader utilities. 
+    // This is the heart of the parsing logic. All other parsing operations should call into this. 
+    // This handles all the wacky corner cases like newlines in quoted values.
     // This is internal. Use the Builder functions to access them.
     // A CSV description is here:
     // http://www.creativyst.com/Doc/Articles/CSV/CSV01.htm 
-    internal static class Reader
+    internal class Reader
     {
+        SplitState _currentState;
+
+        List<string> _parts = new List<string>();
+        StringBuilder _sb = new StringBuilder();
+        bool _captureValue;
+
+
 
         static string Intern(string value) {
             //return string.Intern(value);
@@ -40,154 +48,308 @@ namespace DataAccess
             UnescapedQuote,
             MissingEndQuote
         }
-        
-        public static string[] split(string input, char separator, bool trim) 
+
+        public static string[] split(string input, char separator, bool trim)
         {
-            SplitState currentState = SplitState.Start;
-            List<string> parts = new List<string>();
-
-            StringBuilder sb = new StringBuilder();
-            foreach (char ch in input)
+            Reader r = new Reader();
+            r.StartRow();
+            foreach (var ch in input)
             {
-                switch (currentState)
-                {
-                    case SplitState.Start:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.StartQuote;
-                        }
-                        else if (ch == separator)
-                        {
-                            currentState = SplitState.StartSeparator;
-                        }
-                        else if (ch == ' ')
-                        {
-                            currentState = SplitState.PotentialStartSpace;
-                        }
-                        else
-                        {
-                            currentState = SplitState.Word;
-                        }
-                        break;
-                    case SplitState.StartQuote:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.PotentialEndQuote;
-                        }
-                        else
-                        {
-                            currentState = SplitState.EscapedWord;
-                        }
-                        break;
-                    case SplitState.StartSeparator:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.StartQuote;
-                        }
-                        else if (ch == separator)
-                        {
-                            break;
-                        }
-                        else if (ch == ' ')
-                        {
-                            currentState = SplitState.PotentialStartSpace;
-                        }
-                        else
-                        {
-                            currentState = SplitState.Word;
-                        }
-                        break;
-                    case SplitState.PotentialStartSpace:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.StartQuote;
-                            sb.Length = 0;
-                        }
-                        else if (ch == separator)
-                        {
-                            currentState = SplitState.StartSeparator;
-                        }
-                        else if (ch != ' ')
-                        {
-                            currentState = SplitState.Word;
-                        }
-                        break;
-                    case SplitState.Word:
-                        // Allow quotes in the middle of a word.
-                        // a, b "b", c
-                        if (ch == '"')
-                        {
-                            //currentState = SplitState.UnescapedQuote;
-                        }
-                        else if (ch == separator)
-                        {
-                            currentState = SplitState.StartSeparator;
-                        }
-                        break;
-                    case SplitState.EscapedWord:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.PotentialEndQuote;
-                        }
-                        break;
-                    case SplitState.PotentialEndQuote:
-                        if (ch == '"')
-                        {
-                            currentState = SplitState.EscapedWord;
-                        }
-                        else if (ch == separator)
-                        {
-                            currentState = SplitState.StartSeparator;
-                        }
-                        else if (ch == ' ')
-                        {
-                            currentState = SplitState.PotentialEndSpace;
-                        }
-                        else
-                        {
-                            currentState = SplitState.UnescapedQuote;
-                        }
-                        break;
-                    case SplitState.PotentialEndSpace:
-                        if (ch == separator)
-                        {
-                            currentState = SplitState.StartSeparator;
-                        }
-                        else if (ch != ' ')
-                        {
-                            currentState = SplitState.UnescapedQuote;
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                r.ProcessSingleChar(ch, separator, trim);
+            }
+            return r.DoneRow(trim);
+        }
 
-                if (currentState == SplitState.StartSeparator)
-                {
-                    string x = sb.ToString();
-                    if (trim) { x = x.Trim(); }
-                    parts.Add(Intern(x));
-                    sb.Length = 0;
-                }
+        public void StartRow()
+        {
+            rowCount++;
+            _currentState = SplitState.Start;
+            _parts.Clear();
+            _sb.Length = 0;
 
-                if ((currentState == SplitState.PotentialStartSpace) ||
-                    (currentState == SplitState.Word) ||
-                    (currentState == SplitState.EscapedWord) ||
-                    (currentState == SplitState.PotentialEndSpace))
-                {
-                    sb.Append(ch);
-                }
+            _captureValue = IncludeColumn(_parts.Count);
+        }
 
-                Utility.Assert(currentState != SplitState.UnescapedQuote, "unescaped double quote");
-                Utility.Assert(currentState != SplitState.MissingEndQuote, "missing closing quote");
+        private bool IncludeColumn(int columnIdx)
+        {
+            // $$$
+            return true;
+        }
+
+        public char chSeparator; // Guess the separator from the first row
+        public int rowCount = -1; // before start of rist row
+        public bool errorMode; // hit an error, just jump to the next newline
+        public int ignore; // really bad failures. 
+
+        const char EOFChar = unchecked((char) -1);
+        public string[] ProcessEndOfFile(bool trim)
+        {
+            return ProcessChar(EOFChar, trim);
+        }
+
+        // Process the character. If we're at the end of a row, return the values. 
+        // If we're int he middle of a row, return null.
+        // accept -1 as a EOF terminator to cooperate with STream.ReadByte(). 
+        public string[] ProcessChar(char ch, bool trim)
+        {
+            if (ch == EOFChar)
+            {
+                if (this.HasContent())
+                {
+                    ch = '\n';
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            if (ch == '\r')
+            {
+                if (!ShouldNewlineBeContent())
+                {
+                    return null;
+                }
+            }
+            if (ch == '\n')
+            {
+                if (!errorMode)
+                {
+                    if (!ShouldNewlineBeContent())
+                    {
+                        var values = this.DoneRow(trim);
+                        StartRow();
+                        return values;
+                    }
+                }
+                else
+                {
+                    errorMode = false;
+                    return null;
+                }
             }
 
-            // add leftovers
-            string lastItem = sb.ToString();
-            if (trim) {lastItem = lastItem.Trim();}
-            parts.Add(Intern(lastItem));
+            // Guess separator from contents.
+            if (chSeparator == 0)
+            {
+                if (ch == '\t')
+                {
+                    chSeparator = '\t';
+                }
+                else if (ch == ',')
+                {
+                    chSeparator = ',';
+                }
+                else if (ch == ';')
+                {
+                    chSeparator = ';';
+                }
+                else if (ch == '|')
+                {
+                    chSeparator = '|';
+                }
+            }
 
-            return parts.ToArray();
+            try
+            {
+                if (!errorMode)
+                {
+                    ProcessSingleChar(ch, chSeparator, trim);
+                }
+            }
+            catch (AssertException e)
+            {
+                // Something really corrupt about this row. Ignore it. 
+                ignore++;
+
+                Console.WriteLine("$$$ Error at row: {0} {1}", rowCount, e.Message);
+                errorMode = true;
+                StartRow();
+            }
+            return null;
+        }
+
+        public void ProcessSingleChar(char ch, char separator, bool trim)
+        {
+            switch (_currentState)
+            {
+                case SplitState.Start:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.StartQuote;
+                    }
+                    else if (ch == separator)
+                    {
+                        _currentState = SplitState.StartSeparator;
+                    }
+                    else if (ch == ' ')
+                    {
+                        _currentState = SplitState.PotentialStartSpace;
+                    }
+                    else
+                    {
+                        _currentState = SplitState.Word;
+                    }
+                    break;
+                case SplitState.StartQuote:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.PotentialEndQuote;
+                    }
+                    else
+                    {
+                        _currentState = SplitState.EscapedWord;
+                    }
+                    break;
+                case SplitState.StartSeparator:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.StartQuote;
+                    }
+                    else if (ch == separator)
+                    {
+                        break;
+                    }
+                    else if (ch == ' ')
+                    {
+                        _currentState = SplitState.PotentialStartSpace;
+                    }
+                    else
+                    {
+                        _currentState = SplitState.Word;
+                    }
+                    break;
+                case SplitState.PotentialStartSpace:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.StartQuote;
+                        _sb.Length = 0;
+                    }
+                    else if (ch == separator)
+                    {
+                        _currentState = SplitState.StartSeparator;
+                    }
+                    else if (ch != ' ')
+                    {
+                        _currentState = SplitState.Word;
+                    }
+                    break;
+                case SplitState.Word:
+                    // Allow quotes in the middle of a word.
+                    // a, b "b", c
+                    if (ch == '"')
+                    {
+                        //currentState = SplitState.UnescapedQuote;
+                    }
+                    else if (ch == separator)
+                    {
+                        _currentState = SplitState.StartSeparator;
+                    }
+                    break;
+                case SplitState.EscapedWord:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.PotentialEndQuote;
+                    }
+                    break;
+                case SplitState.PotentialEndQuote:
+                    if (ch == '"')
+                    {
+                        _currentState = SplitState.EscapedWord;
+                    }
+                    else if (ch == separator)
+                    {
+                        _currentState = SplitState.StartSeparator;
+                    }
+                    else if (ch == ' ')
+                    {
+                        _currentState = SplitState.PotentialEndSpace;
+                    }
+                    else
+                    {
+                        _currentState = SplitState.UnescapedQuote;
+                    }
+                    break;
+                case SplitState.PotentialEndSpace:
+                    if (ch == separator)
+                    {
+                        _currentState = SplitState.StartSeparator;
+                    }
+                    else if (ch != ' ')
+                    {
+                        _currentState = SplitState.UnescapedQuote;
+                    }
+                    // Anything else is a case like: "abc" d
+                    // does that parse as 'abc d'?  Is it an error?
+                    break;
+                default:
+                    break;
+            }
+
+            switch (_currentState)
+            {
+                case SplitState.StartSeparator:
+                    {
+                        PushValue(trim);
+                    }
+                    break;
+
+                case SplitState.PotentialStartSpace:
+                case SplitState.Word:
+                case SplitState.EscapedWord:
+                case SplitState.PotentialEndSpace:
+                    if (_captureValue)
+                    {
+                        _sb.Append(ch);
+                    }
+                    break;
+
+                case SplitState.UnescapedQuote:
+                    throw new AssertException("unescaped double quote");
+
+                case SplitState.MissingEndQuote:
+                    throw new AssertException("missing closing quote");
+            }
+        }
+
+        private void PushValue(bool trim)
+        {
+            string x;
+            if (_captureValue)
+            {
+
+                x = _sb.ToString();
+                _sb.Length = 0;
+                if (trim) { x = x.Trim(); }
+            }
+            else
+            {
+                x = string.Empty;
+            }
+            _parts.Add(x);
+
+            _captureValue = this.IncludeColumn(_parts.Count);
+        }
+
+        // Are we in the middle of a word? IE, should newlines count as part of the value?
+        public bool ShouldNewlineBeContent()
+        {
+            return _currentState == SplitState.EscapedWord;
+        }
+        public string[] DoneRow(bool trim)
+        {
+            // add leftovers
+            PushValue(trim);
+           
+            return _parts.ToArray();
+        }
+
+        public bool HasContent()
+        {
+            if (_sb == null || _sb.Length == 0)
+            {
+                return false;
+            }
+            return !string.IsNullOrWhiteSpace(_sb.ToString());
         }
 
         public static MutableDataTable ReadTab(string filename) {

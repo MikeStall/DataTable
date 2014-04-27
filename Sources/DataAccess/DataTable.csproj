@@ -46,6 +46,7 @@
     <Compile Include="CsvWriter.cs" />
     <Compile Include="DataTableBuilder.cs" />
     <Compile Include="DataTableLookup.cs" />
+    <Compile Include="DataTableStreamLookup.cs" />
     <Compile Include="EnumerableDataTable.cs" />
     <Compile Include="RowExtensions.cs" />
     <Compile Include="StrongTypeBinder.cs" />

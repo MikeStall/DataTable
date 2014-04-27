@@ -7,6 +7,8 @@ using System.Text;
 
 namespace DataAccess
 {
+    
+    [Obsolete("Use DataTableStreamLookup instead")]
     public interface IDataTableLookup
     {
         Row LookupRow(string key);
@@ -16,6 +18,11 @@ namespace DataAccess
     // Provide a fast lookup over a datatable.
     // Index is in-memory
     // This can be useful for tables that are larger than memory
+    // This is deprecated because:
+    // - it's a copy of the parser logic. 
+    // - using a string map is convenient but is woefully inefficient (since it still forces parsing)
+    // Switch to DataTableStreamLookup which solves both of these problems. 
+    [Obsolete("Use DataTableStreamLookup instead")]
     public class DataTableLookup : IDataTableLookup
     {
         // $$$ Still too large. 271MB working set to read in a 500 MB file.  (3.7 million entries)

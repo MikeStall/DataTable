@@ -196,25 +196,31 @@ Bob,Smith
         public void ReadWithNewline()
         {
 
-            string content = @"abc,def, xyz
-1,'1a
-1b', 1c
-2, 2ab,2c
-".Replace('\'', '"');
+            // Beware of GIT checkouts and editors can replace newlines, so be explicit
+            string content = 
+"abc,def, xyz\r\n" +
+"1,\"1a\r\n1b\", 1c\n" + // has \r\n split
+"2, \"2a\n2b\",2c\n" +  // just has \n split
+"3, 3ab, 3c";
+
             var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
 
             DataTable dt = DataTable.New.ReadLazy(stream);
 
             var rows = dt.Rows.ToArray();
-            Assert.Equal(2, rows.Length);
+            Assert.Equal(3, rows.Length);
 
             Assert.Equal("1", rows[0].Values[0]);
-            Assert.Equal("1a" + Environment.NewLine + "1b", rows[0].Values[1]);
+            Assert.Equal("1a\r\n1b", rows[0].Values[1]);
             Assert.Equal("1c", rows[0].Values[2]);
             
             Assert.Equal("2", rows[1].Values[0]);
-            Assert.Equal("2ab", rows[1].Values[1]);
+            Assert.Equal("2a\n2b", rows[1].Values[1]);
             Assert.Equal("2c", rows[1].Values[2]);
+
+            Assert.Equal("3", rows[2].Values[0]);
+            Assert.Equal("3ab", rows[2].Values[1]);
+            Assert.Equal("3c", rows[2].Values[2]);
         }
 
        [Fact]

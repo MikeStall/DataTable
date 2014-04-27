@@ -56,7 +56,37 @@ namespace DataTableTests
 
 
         [Fact]
-        public void StreamReader()
+        public void StreamReaderNoTrailingNewline()
+        {
+            // Arrange
+            Stream s = new MemoryStream();
+            TextWriter tw = new StreamWriter(s);
+            tw.Write(
+@"value
+10
+20
+30"); // No newline after last row
+            tw.Flush();
+            s.Position = 0;
+
+
+            // Act
+
+            DataTable dt = DataTable.New.ReadLazy(s);
+
+            var x = dt.Rows.ToArray();
+
+            // assert
+            Assert.Equal(3, x.Length);
+            Assert.Equal("10", x[0]["value"]);
+            Assert.Equal("20", x[1]["value"]);
+            Assert.Equal("30", x[2]["value"]);
+
+            s.Position = 0; // verify stream is not disposed            
+        }
+
+        [Fact]
+        public void StreamReaderTrailingNewline()
         {
             // Arrange
             Stream s = new MemoryStream();
@@ -66,7 +96,7 @@ namespace DataTableTests
 10
 20
 30
-");
+"); // Newline after the last row.
             tw.Flush();
             s.Position = 0;
 
@@ -83,8 +113,7 @@ namespace DataTableTests
             Assert.Equal("20", x[1]["value"]);
             Assert.Equal("30", x[2]["value"]);
 
-            s.Position = 0; // verify stream is not disposed
-            
+            s.Position = 0; // verify stream is not disposed            
         }
 
         private class test
