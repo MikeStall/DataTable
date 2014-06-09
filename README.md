@@ -1,6 +1,6 @@
 ##C# project for reading and writing CSVs 
 
-Libaries for easy reading, writing, and manipulation of CSV files. Is able to handle: 
+Libraries for easy reading, writing, and manipulation of CSV files. Is able to handle: 
 
 * Linq
 * Creating tables from `IEnumerable<T>`
