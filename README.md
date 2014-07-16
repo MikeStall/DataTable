@@ -1,12 +1,14 @@
 ##C# project for reading and writing CSVs 
 
-Libraries for easy reading, writing, and manipulation of CSV files. Is able to handle: 
+Fast streaming CSV parser. Libraries for easy reading, writing, and manipulation of CSV files. Is able to handle: 
 
-* Linq
+* CSV file format corner cases including escaped values, newlines, and error recovery
+* Linq and binding CSV rows directly to .NET objects
 * Creating tables from `IEnumerable<T>`
-* Dictionaries
 * In-memory mutable tables 
 * Streaming through large tables.
+* Dictionaries
+* 2D-Dictionary support and converting to CSVs. Great for sparse-arrays. 
 
 It's an easier data table than `System.Data.DataTable`.
 
@@ -20,7 +22,19 @@ A few quick examples:
 > **Download as CsvTools from Nuget to include in your C# project**: 
 
     using DataAccess;
-    var dt = DataTable.New.ReadCsv(filename); // load a CSV from disk
+    // See methods on DataTable.New for loading a DataTable.
+    var dt = DataTable.New.ReadLazy(filename); // Fast streaming load a CSV from disk. 
+
+> **Get a mutable datatable**:
+
+    MutableDataTable dt = DataTable.New.ReadCsv(filename); // load entire CSV into memory for mutation 
+    int totalRows = dt.NumRows;
+
+    // Includes mutation methods like:
+    //  CreateColumn, ReorderColumn, KeepColumns, RenameColumn, 
+    //  GetRow(int rowIndex), KeepRows(Func<T, bool> predicate)
+    
+    dt.SaveCsv(filename); // write back out
 
 > **Linq against the rows**: 
 
