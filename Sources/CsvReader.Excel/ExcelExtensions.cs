@@ -119,9 +119,13 @@ namespace DataAccess
             IEnumerable<Cell> cells = wsPart.Worksheet.Descendants<Cell>();
 
             Dictionary2d<int, int, string> vals = new Dictionary2d<int, int, string>();
+            
+            // Retrieve a cached list of shared strings of this workbook to be used by all cell references
+            IList<OpenXmlElement> sharedStrings = wbPart.GetPartsOfType<SharedStringTablePart>().Select(sharedString => sharedString.SharedStringTable.OfType<OpenXmlElement>().ToList()).FirstOrDefault();
+            
             foreach (Cell c in cells)
             {
-                var val = CellToText(wbPart, c);
+                var val = CellToText(wbPart, c, sharedStrings);
                 var loc = c.CellReference;
                 var loc2 = ParseRef(loc);
 
@@ -129,6 +133,8 @@ namespace DataAccess
                 int rowId = loc2.Item2;
                 vals[rowId, columnId] = val;
             }
+            
+            sharedStrings.Clear();
 
             if (vals.Count > 0)
             {
@@ -184,7 +190,7 @@ namespace DataAccess
 
         // This function from:
         // http://msdn.microsoft.com/en-us/library/hh298534.aspx
-        static string CellToText(WorkbookPart wbPart, Cell theCell)
+        static string CellToText(WorkbookPart wbPart, Cell theCell, IList<OpenXmlElement> sharedStrings)
         {
             // If the cell does not exist, return an empty string.
             if (theCell == null)
@@ -207,19 +213,13 @@ namespace DataAccess
                 {
                     case CellValues.SharedString:
 
-                        // For shared strings, look up the value in the
-                        // shared strings table.
-                        var stringTable =
-                            wbPart.GetPartsOfType<SharedStringTablePart>()
-                            .FirstOrDefault();
-
                         // If the shared string table is missing, something 
                         // is wrong. Return the index that is in
                         // the cell. Otherwise, look up the correct text in 
                         // the table.
-                        if (stringTable != null)
+                        if (sharedStrings != null)
                         {
-                            return stringTable.SharedStringTable.ElementAt(int.Parse(value)).InnerText;
+                            return sharedStrings[int.Parse(value)].InnerText;
                         }
                         break;
 
