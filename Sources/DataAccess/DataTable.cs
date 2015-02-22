@@ -44,7 +44,7 @@ namespace DataAccess
         /// </summary>
         /// <typeparam name="T">Target object type to parse.</typeparam>
         /// <returns>enumeration of rows as strongly typed object</returns>
-        public virtual IEnumerable<T> RowsAs<T>() where T : class, new()
+        public virtual IEnumerable<T> RowsAs<T>(Dictionary<string, string> mappingDictionary = null) where T : class, new()
         {
             Func<Row, T> parser;
 
@@ -55,7 +55,7 @@ namespace DataAccess
                 parser = _parserFunc as Func<Row, T>;
                 if (parser == null)
                 {
-                    parser = GetParserFunction<T>();
+                    parser = GetParserFunction<T>(mappingDictionary);
                     _parserFunc = parser;
                 }
             }
@@ -82,9 +82,9 @@ namespace DataAccess
         /// This is useful if you need to cache the parser function
         /// </summary>
         /// <returns>the strongly typed object.</returns>
-        public Func<Row, T> GetParserFunction<T>()
+        public Func<Row, T> GetParserFunction<T>(Dictionary<string, string> mappingDictionary = null)
         {
-            return StrongTypeBinder.BuildMethod<T>(this.ColumnNames);
+            return StrongTypeBinder.BuildMethod<T>(this.ColumnNames, mappingDictionary);
         }
 
         // Cache the parser function. 

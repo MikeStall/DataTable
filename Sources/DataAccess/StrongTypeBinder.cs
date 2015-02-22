@@ -37,14 +37,14 @@ namespace DataAccess
 
         // Create a strongly-typed custom parse method for the object. 
         // This can frontload all type analysis and generate a dedicated method that avoids Reflection. 
-        public static Func<Row, T> BuildMethod<T>(IEnumerable<string> columnNames)
+        public static Func<Row, T> BuildMethod<T>(IEnumerable<string> columnNames, Dictionary<string, string> mappingDictionary = null)
         {
             ParameterExpression param = Expression.Parameter(typeof(Row), "row");
 
             Type target = typeof(T);
 
             string[] columnNamesNormalized = columnNames.ToArray();
-            columnNamesNormalized = Array.ConvertAll(columnNamesNormalized, Normalize);
+            columnNamesNormalized = Array.ConvertAll(columnNamesNormalized, element => NormalizeWithMappings(element, mappingDictionary));
 
             PropertyInfo[] targetProperties = target.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
@@ -128,6 +128,16 @@ namespace DataAccess
                 i++;
             }
             return -1;
+        }
+
+        // Normalize the column name using mapping Dictionary else Convert to upper case, alphanumeric.
+        private static string NormalizeWithMappings(string name, Dictionary<string, string> mappingDictionary = null)
+        {
+            mappingDictionary = mappingDictionary != null
+                ? mappingDictionary.ToDictionary(kp => kp.Value, kp => kp.Key)
+                : new Dictionary<string, string>();
+
+            return mappingDictionary.ContainsKey(name) ? Normalize(mappingDictionary[name]) : Normalize(name);
         }
 
         // Normalize the column name. Convert to upper case, alphanumeric.
