@@ -102,17 +102,12 @@ namespace DataAccess
         }
 
         // Escape a value for writing to CSVs
-        // - Enclose it in quotes if the value has a comma
+        // - Enclose it in quotes to ensure compatability across all readers
         private static string Escape(string s)
         {
             if (s == null)
                 return string.Empty;
 
-//            if (s.IndexOf(',') >= 0)
-//            {
-//                return "\"" + s + "\"";
-//            }
-//            return s;
             return string.Concat("\"", s.Replace("\"", "\"\""), "\"");
         }
 
