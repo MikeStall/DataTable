@@ -102,7 +102,7 @@ namespace DataAccess
         }
 
         // Escape a value for writing to CSVs
-        // - Enclose it in quotes to ensure compatability across all readers
+        // - Enclose it in quotes to ensure compatability across all readers with all data 
         private static string Escape(string s)
         {
             if (s == null)
