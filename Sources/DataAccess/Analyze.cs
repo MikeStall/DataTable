@@ -77,6 +77,11 @@ namespace DataAccess
         /// </param>    
         public static void Shred(this DataTable table, string columnName, Func<string, TextWriter> funcCreateStream)
         {
+            Shred(table, columnName, funcCreateStream, null);
+        }
+
+        public static void Shred(this DataTable table, string columnName, Func<string, TextWriter> funcCreateStream, Func<string,string> filter)
+        {
             Dictionary<string, TextWriter> dict = new Dictionary<string, TextWriter>();
 
             try
@@ -85,6 +90,14 @@ namespace DataAccess
                 {
                     TextWriter tw;
                     string val = row[columnName];
+                    if (filter != null)
+                    {
+                        val = filter(val);
+                        if (val == null)
+                        {
+                            continue;
+                        }
+                    }
                     if (!dict.TryGetValue(val, out tw))
                     {
                         // New value
@@ -127,6 +140,19 @@ namespace DataAccess
                     return tw;
                 };
             Shred(table, columnName, func);
+        }
+
+        public static void Shred(this DataTable table, string columnName, string templateFilename, Func<string,string> filter)
+        {
+            Func<string, TextWriter> func =
+                (value) =>
+                {
+                    string destination = string.Format(templateFilename, value);
+                    Utility.EnsureDirExistsForFile(destination);
+                    TextWriter tw = new StreamWriter(destination);
+                    return tw;
+                };
+            Shred(table, columnName, func, filter);
         }
 
 
