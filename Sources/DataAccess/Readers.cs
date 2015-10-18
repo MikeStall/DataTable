@@ -20,8 +20,6 @@ namespace DataAccess
         StringBuilder _sb = new StringBuilder();
         bool _captureValue;
 
-
-
         static string Intern(string value) {
             //return string.Intern(value);
             return value;
@@ -270,10 +268,10 @@ namespace DataAccess
                     {
                         // Case where we had a double quote. like:
                         //  ""val"
-                        _currentState = SplitState.UnescapedQuote;
+                        //_currentState = SplitState.UnescapedQuote;
 
                         // Treat is as an escape. 
-                        //_currentState = SplitState.EscapedWord;
+                        _currentState = SplitState.EscapedWord;
                     }
                     break;
                 case SplitState.PotentialEndSpace:

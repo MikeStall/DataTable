@@ -180,13 +180,13 @@ Bob,Smith
         [Fact]
         public void Split_MissingClosingQuote()
         {
-            Assert.Throws<AssertException>(
-                delegate
-                {
-                    string[] parts = Reader.split("abc,\"\"d", ',');
-                });
+            // Technically an error case. But it happens in the wild. 
+            // So make a best effort to parse it. 
+            string[] parts = Reader.split("abc,\"\"d\",xyz", ',');
+            Assert.Equal(3, parts.Length);
+            Assert.Equal("abc", parts[0]);
+            Assert.Equal("xyz", parts[2]);
         }
-
 
         // $$$ More tests:
         // - split on 2 columns
