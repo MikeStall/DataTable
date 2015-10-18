@@ -164,5 +164,35 @@ namespace DataTableTests
             Assert.Equal(3, dt.Columns.Count());
             Assert.Equal("Name", dt.ColumnNames.ToList()[1]);
         }
+
+        // Reported by:
+        // https://github.com/MikeStall/DataTable/issues/44
+        [Fact]
+        public void StreamReaderRowEndingWithEmptyValue()
+        {
+            // Arrange
+            Stream s = new MemoryStream();
+            TextWriter tw = new StreamWriter(s);
+            tw.Write(
+@"value1,value2
+10,");
+            tw.Flush();
+            s.Position = 0;
+
+
+            // Act
+
+            DataTable dt = DataTable.New.ReadLazy(s);
+
+            var x = dt.Rows.ToArray();
+
+            // assert
+            Assert.Equal(1, x.Length);
+            Assert.Equal("10", x[0]["value1"]);
+            Assert.Equal("", x[0]["value2"]);
+
+            s.Position = 0; // verify stream is not disposed            
+        }
+
     }
 }

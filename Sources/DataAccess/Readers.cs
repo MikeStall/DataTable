@@ -53,9 +53,11 @@ namespace DataAccess
         {
             Reader r = new Reader();
             r.StartRow();
+            int count = 0;
             foreach (var ch in input)
             {
                 r.ProcessSingleChar(ch, separator, trim);
+                count++;
             }
             return r.DoneRow(trim);
         }
@@ -266,7 +268,12 @@ namespace DataAccess
                     }
                     else
                     {
+                        // Case where we had a double quote. like:
+                        //  ""val"
                         _currentState = SplitState.UnescapedQuote;
+
+                        // Treat is as an escape. 
+                        //_currentState = SplitState.EscapedWord;
                     }
                     break;
                 case SplitState.PotentialEndSpace:
@@ -345,6 +352,11 @@ namespace DataAccess
 
         public bool HasContent()
         {
+            if (_parts.Count > 0)
+            {
+                // Even if this value is empty, if there are previous values in the row, that means content.
+                return true;
+            }
             if (_sb == null || _sb.Length == 0)
             {
                 return false;
