@@ -108,12 +108,13 @@ namespace DataAccess
             if (s == null)
                 return string.Empty;
 
-            if (s.IndexOf(',') >= 0)
+            if (s.IndexOfAny(_escapeChars) >= 0)
             {
                 return "\"" + s + "\"";
             }
             return s;
         }
+        static readonly char[] _escapeChars = new char[] { ',', '\r', '\n' };
 
         // Don't close the underlying stream, we don't own it. But we can flush it.
         public void Flush() {
