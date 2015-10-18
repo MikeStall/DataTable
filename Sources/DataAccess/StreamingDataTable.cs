@@ -15,8 +15,8 @@ namespace DataAccess
     {
         internal readonly Stream _input;
                 
-        public StreamingDataTable(Stream input, string[] columns = null)
-            : base(columns)
+        public StreamingDataTable(Stream input, string[] columns = null, char separator = '\0')
+            : base(columns, separator)
         {
             // We could optimize to avoid requiring CanSeek if we failed on attempts
             // to read the the rows multiple times. 
@@ -45,8 +45,8 @@ namespace DataAccess
     {
         private readonly string _filename;
 
-        public FileStreamingDataTable(string filename, string[] columns = null)
-            : base(columns)
+        public FileStreamingDataTable(string filename, string[] columns = null, char separator = '\0')
+            : base(columns, separator)
         {
             _filename = filename;
         }
@@ -72,8 +72,11 @@ namespace DataAccess
         // Is the first row the headers or data?
         private bool _firstRowIsHeaders;
 
-        protected TextReaderDataTable(string[] columnNames)
+        private char _separator;
+
+        protected TextReaderDataTable(string[] columnNames, char separator = '\0')
         {
+            _separator = separator;
             _columnNames = columnNames;
 
             // No column names provided, so assume they're in the first row
@@ -93,7 +96,12 @@ namespace DataAccess
                         sr = this.OpenText();                    
                         // First get columns.
                         string header = sr.ReadLine();
-                        char ch = Reader.GuessSeparateFromHeaderRow(header);
+
+                        char ch = _separator;
+                        if (ch == '\0')
+                        {
+                            ch = Reader.GuessSeparateFromHeaderRow(header);
+                        }
                         _columnNames = Reader.split(header, ch);
                     }
                     finally

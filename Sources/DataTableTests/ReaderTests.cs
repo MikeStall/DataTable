@@ -223,23 +223,33 @@ Bob,Smith
             Assert.Equal("3c", rows[2].Values[2]);
         }
 
-       [Fact]
+        [Fact]
         public void ReadThrowsAssertExceptionIfAllowMismatchFalseAndLinesContainMismatch()
         {
-           Assert.Throws<AssertException>(
-              delegate
-              {
-                 string content =
+            // Make reader tolerant
+
+            string content =
 @"aaa,bbb,ccc,ddd
 111,111,111,111
 222,222,222
 333,333,333,333";
 
-                 var textReader = new StringReader(content);
+            var textReader = new StringReader(content);
+            MutableDataTable dt = Reader.Read(textReader);
 
-                 Reader.Read(textReader);
-              });
+            var s = dt.SaveToString();
+
+            // Round-trip 
+            // - Extra comma at row with missing value. 
+            // - newline after all rows, even the last one
+            Assert.Equal(
+@"aaa,bbb,ccc,ddd
+111,111,111,111
+222,222,222,
+333,333,333,333
+", s);
         }
+
         [Fact]
         public void ReadWithDefaultColumnsShouldHandleFirstRowAsRowData()
         {

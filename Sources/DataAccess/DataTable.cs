@@ -173,5 +173,19 @@ namespace DataAccess
                 SaveToStream(sw);
             }
         }
+
+        /// <summary>
+        /// Convenience method for getting the contents of the table as a string. 
+        /// This is the inverse of DataTable.New.ReadFromString(), although the string will be normalized. 
+        /// </summary>
+        /// <returns>string representation of the data. </returns>
+        public string SaveToString()
+        {
+            StringWriter sw = new StringWriter();
+            this.SaveToStream(sw);
+            string newContents = sw.ToString();
+            return newContents;
+        }
+
     }
 }

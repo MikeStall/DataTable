@@ -372,55 +372,32 @@ namespace DataAccess
          
         public static MutableDataTable ReadCSV(TextReader stream)
         {
-            IList<string> lines = ReadAllLines(stream);
-            return ReadArray(lines, ',', false);            
+            return Read(stream, delimiter: ',');
         }
 
-        private static IList<string> ReadAllLines(string filename)
-        {
-            using (TextReader tr = new StreamReader(filename))
-            {
-                return ReadAllLines(tr);
-            }
-        }
-
-        private static IList<string> ReadAllLines(TextReader stream)
-        {
-            List<string> lines = new List<string>();
-            while (true)
-            {
-                string line = stream.ReadLine();
-                if (line == null)
-                {
-                    return lines;
-                }
-
-                // Some CSVs have blank links, like "\r\r\n" as a line terminator. 
-                // Ignore the extra blank,.
-                if (string.IsNullOrWhiteSpace(line))
-                {
-                    continue;
-                }
-                lines.Add(line);
-            }   
-        }
-
-        private static IList<string> ReadAllLines(string text, string newLine = "\r\n")
-        {
-            var lines = text.Split(new [] {newLine}, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return lines;
-        }
 
         public static MutableDataTable Read(TextReader stream, char delimiter = '\0', string[] defaultColumns = null)
         {
-            IList<string> lines = ReadAllLines(stream);
-            return ReadArray(lines, delimiter, false, defaultColumns);
+            // TextReader is not seekable. Need to convert to a Stream so we can seek. 
+            // We're asking for a Mutable dt anyways, so it's already expected to load it in memory. 
+            string contents = stream.ReadToEnd();
+            var bytes = Encoding.UTF8.GetBytes(contents);
+            contents = null;
+            using (MemoryStream ms = new MemoryStream(bytes))
+            {
+                var dtLazy = new StreamingDataTable(ms, defaultColumns, delimiter);
+
+                var dt = Utility.ToMutable(dtLazy);
+                return dt;
+            }
         }
 
         public static MutableDataTable ReadString(string text, string newLine = "\r\n", char delimiter = '\0', string[] defaultColumns = null)
         {
-            IList<string> lines = ReadAllLines(text, newLine);
-            return ReadArray(lines, delimiter, false, defaultColumns);
+            using (var tr = new StringReader(text))
+            {
+                return Read(tr, delimiter, defaultColumns);
+            }
         }
 
         public static char GuessSeparateFromHeaderRow(string header)
@@ -455,94 +432,11 @@ namespace DataAccess
         // Supports quotes to escape commas
         public static MutableDataTable Read(string filename, char separator = '\0', bool fAllowMismatch = false, string[] defaultColumns = null)
         {
-            var lines = ReadAllLines(filename);
-            MutableDataTable dt = ReadArray(lines, separator, fAllowMismatch, defaultColumns);
+            var dtLazy = new FileStreamingDataTable(filename, defaultColumns, separator);
+
+            var dt = Utility.ToMutable(dtLazy);            
             dt.Name = filename;
             return dt;
-        }
-
-
-        private static MutableDataTable ReadArray(IList<string> lines, char separator, bool fAllowMismatch = false, string[] defaultColumns = null)
-        {
-            if (separator == '\0')
-            {
-                separator = GuessSeparateFromHeaderRow(lines[0]);
-            }
-
-            int numRows = lines.Count - (defaultColumns != null ? 0 : 1);
-            // First row is a header only if we dont pass defaultColumns
-
-            // if defaultColumns is not null then we use them as columns
-            string[] names = defaultColumns ?? split(lines[0], separator);
-
-            int numColumns = names.Length;
-
-            var columns = new Column[numColumns];
-            for (int i = 0; i < numColumns; i++) {
-                columns[i] = new Column(names[i], numRows);
-            }
-
-            // Parse each row into data set
-            using (var lineEnumerator = lines.GetEnumerator())
-            {
-                if (defaultColumns == null)
-                {
-                    lineEnumerator.MoveNext(); // in this case we have columns at first index
-                }
-                var row = -1;
-
-                while (lineEnumerator.MoveNext())
-                {
-                    string line = lineEnumerator.Current;
-
-                    row++;
-
-                    string[] parts = split(line, separator);
-
-                    if (parts.Length < numColumns)
-                    {
-                        // Deal with possible extra commas at the end. 
-                        // Excel handles this. 
-                        for (int c = 0; c < parts.Length; c++)
-                        {
-                            columns[c].Values[row] = parts[c];
-                        }
-
-                        if (fAllowMismatch)
-                        {
-                            for (int c = parts.Length; c < numColumns; c++)
-                            {
-                                columns[c].Values[row] = String.Empty;
-                            }
-                            continue;
-                        }
-
-                    }
-
-                    if (!fAllowMismatch)
-                    {
-                        // If mismatch allowed, then treat this row as garbage rather
-                        // than throw an exception
-                        Utility.Assert(
-                            parts.Length == names.Length,
-                            String.Format(
-                                "Allow Mismatch is False. Line has incorrect number of parts. Line Number:{0}; Expected:{1}; Actual:{2}",
-                                row + 1,
-                                names.Length,
-                                parts.Length));
-                    }
-                    for (int c = 0; c < numColumns; c++)
-                    {
-                        columns[c].Values[row] = parts[c];
-                    }
-                }
-            }
-
-            MutableDataTable data = new MutableDataTable();
-            data.Columns = columns;
-
-
-            return data;
         }
     }
 }
