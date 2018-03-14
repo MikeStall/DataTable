@@ -338,7 +338,7 @@ namespace DataAccess
         // Are we in the middle of a word? IE, should newlines count as part of the value?
         public bool ShouldNewlineBeContent()
         {
-            return _currentState == SplitState.EscapedWord;
+            return (_currentState == SplitState.EscapedWord) || (_currentState == SplitState.StartQuote);
         }
         public string[] DoneRow(bool trim)
         {
