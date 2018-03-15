@@ -355,5 +355,35 @@ Bob,Smith
                 File.Delete(tmpFile);
             }
         }
+
+        // Check to see if inputs with multiple Windows new line characters works
+        [Fact]
+        public void ReadWithMultipleNewLines()
+        {
+            // Beware of GIT checkouts and editors can replace newlines, so be explicit
+            string content = "abc,def, xyz\r\n" +
+                             "1,\"1a\r\n\r\n\r\n\r\n1b\", 1c\n" +
+                             "2, \"2a\n\n\n\n2b\",2c\n" +
+                             "3, 3ab, 3c";
+
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+
+            DataTable dt = DataTable.New.ReadLazy(stream);
+
+            var rows = dt.Rows.ToArray();
+            Assert.Equal(3, rows.Length);
+
+            Assert.Equal("1", rows[0].Values[0]);
+            Assert.Equal("1a\r\n\r\n\r\n\r\n1b", rows[0].Values[1]);
+            Assert.Equal("1c", rows[0].Values[2]);
+
+            Assert.Equal("2", rows[1].Values[0]);
+            Assert.Equal("2a\n\n\n\n2b", rows[1].Values[1]);
+            Assert.Equal("2c", rows[1].Values[2]);
+
+            Assert.Equal("3", rows[2].Values[0]);
+            Assert.Equal("3ab", rows[2].Values[1]);
+            Assert.Equal("3c", rows[2].Values[2]);
+        }
     }
 }
